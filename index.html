@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Instagram Non-Followers Cleaner</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<style>
+:root {
+  --gap:10px;
+  --radius:8px;
+  --blue:#0095f6;
+  --red:#ed4956;
+}
+
+body {
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#fafafa;
+  color:#262626;
+}
+
+h1 {padding:var(--gap); text-align:center;}
+
+/* ---------- LOGIN VIEW ---------- */
+#login-view {
+  display:flex; justify-content:center; align-items:center; min-height:100vh;
+}
+
+.login-box {
+  background:#fff; padding:40px; border-radius:var(--radius); border:1px solid #dbdbdb;
+  width:100%; max-width:400px;
+}
+
+.login-box h2 {text-align:center; margin-top:0;}
+
+.form-group {
+  margin-bottom:20px;
+}
+
+.form-group label {
+  display:block; margin-bottom:8px; font-weight:600; font-size:14px;
+}
+
+.form-group input {
+  width:100%; padding:10px; border:1px solid #dbdbdb; border-radius:var(--radius);
+  font-size:14px; box-sizing:border-box;
+}
+
+.form-group input:focus {
+  outline:none; border-color:var(--blue);
+}
+
+#login-btn {
+  width:100%; background:var(--blue); color:#fff; border:none;
+  padding:10px; border-radius:var(--radius); font-weight:600; font-size:16px;
+  cursor:pointer;
+}
+
+#login-btn:disabled {background:#ccc; cursor:not-allowed;}
+
+#login-error {color:var(--red); font-size:14px; text-align:center; margin-top:10px; display:none;}
+
+/* ---------- FETCH PROGRESS VIEW ---------- */
+#fetch-view {
+  display:none; padding:40px 20px; max-width:700px; margin:0 auto; min-height:100vh;
+}
+
+.progress-box {
+  background:#fff; border:1px solid #dbdbdb; border-radius:var(--radius);
+  padding:40px;
+}
+
+.progress-box h2 {margin-top:0; text-align:center; color:#262626;}
+
+.steps-container {
+  display:flex; flex-direction:column; gap:25px; margin:30px 0;
+}
+
+.step {
+  display:flex; align-items:flex-start; gap:15px;
+}
+
+.step-icon {
+  width:40px; height:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:#f0f0f0; font-weight:600; color:#8e8e8e; font-size:18px;
+  position:relative;
+}
+
+.step.active .step-icon {
+  background:var(--blue); color:#fff;
+  animation: spin 1s linear infinite;
+}
+
+.step.done .step-icon {
+  background:#31a24c; color:#fff;
+}
+
+.step.done .step-icon::after {
+  content:"✓"; position:absolute;
+}
+
+.step.done .step-icon::before {
+  display:none;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.step-content {
+  flex:1;
+}
+
+.step-title {
+  font-weight:600; margin:0 0 8px 0; color:#262626;
+}
+
+.step-bar {
+  width:100%; height:8px; background:#f0f0f0; border-radius:4px; overflow:hidden;
+  margin-bottom:6px;
+}
+
+.step-bar-fill {
+  height:100%; background:var(--blue); width:0%; transition:width 0.3s ease;
+}
+
+.step-percent {
+  font-size:12px; color:#8e8e8e;
+}
+
+.step.done .step-bar-fill {
+  width:100%; background:#31a24c;
+}
+
+.step-log {
+  display:none; background:#f5f5f5; border:1px solid #e0e0e0; border-radius:4px;
+  padding:10px; margin-top:10px; font-family:monospace; font-size:11px; max-height:200px;
+  overflow-y:auto;
+}
+
+.step.active .step-log {
+  display:block;
+}
+
+.log-line {
+  margin:0; padding:2px 0; color:#555; word-break:break-word;
+}
+
+.log-line.success {
+  color:#31a24c; font-weight:600;
+}
+
+.log-line.rate-limit {
+  color:#ff6b35; font-weight:600; background:#fff3e0; padding:4px;
+}
+
+.log-line.countdown {
+  color:#ff9800; padding:2px 4px;
+}
+
+.completion-message {
+  text-align:center; margin-top:30px; font-size:16px; color:#31a24c; font-weight:600;
+  display:none;
+}
+
+.completion-message.show {
+  display:block;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity:0; }
+  to { opacity:1; }
+}
+
+#top-bar {
+  position:sticky; top:0; background:#fff; border-bottom:1px solid #dbdbdb;
+  padding:var(--gap); display:flex; justify-content:space-between; align-items:center; z-index:10;
+}
+
+#bulk {background:var(--red); color:#fff; border:none; padding:8px 14px; border-radius:var(--radius); cursor:pointer; font-weight:600;}
+#bulk:disabled {background:#ccc; cursor:not-allowed;}
+
+#filter {background:#fff; color:var(--blue); border:1px solid var(--blue); padding:8px 14px; border-radius:var(--radius); cursor:pointer; font-weight:600;}
+
+#logout-btn {background:#fff; color:var(--red); border:1px solid var(--red); padding:8px 14px; border-radius:var(--radius); cursor:pointer; font-weight:600;}
+
+#grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:var(--gap);
+  padding:var(--gap);
+}
+
+.card {
+  background:#fff; border:1px solid #dbdbdb; border-radius:var(--radius);
+  text-align:center; padding:var(--gap); position:relative; transition:opacity .2s;
+}
+
+.card img {
+  width:100%; aspect-ratio:1; border-radius:50%; object-fit:cover; background:#eee;
+}
+
+.uname {margin:6px 0; font-weight:600; font-size:14px;}
+.followers {margin:4px 0; font-size:12px; color:#8e8e8e;}
+.card a {display:block; font-size:12px; color:var(--blue); text-decoration:none; margin-bottom:6px;}
+
+.card button {
+  width:100%; margin-top:6px; border:1px solid var(--blue); background:#fff; color:var(--blue);
+  border-radius:3px; padding:5px; font-size:13px; cursor:pointer;
+}
+
+.card button.ticked {background:var(--blue); color:#fff;}
+.card.done {opacity:.4; pointer-events:none;}
+
+#log {
+  position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
+  background:#000; color:#fff; padding:6px 12px; border-radius:var(--radius); font-size:13px; display:none;
+}
+</style>
+</head>
+<body>
+
+<!-- ---------- LOGIN VIEW ---------- -->
+<div id="login-view">
+  <div class="login-box">
+    <h2>Instagram Non-Followers</h2>
+    <p style="text-align:center; color:#8e8e8e; font-size:14px;">
+      Enter your Instagram session credentials to continue
+    </p>
+    <form id="login-form" onsubmit="return handleLogin(event)">
+      <div class="form-group">
+        <label for="sessionid">Session ID</label>
+        <input type="password" id="sessionid" placeholder="Paste your sessionid cookie" required />
+      </div>
+      <div class="form-group">
+        <label for="csrftoken">CSRF Token</label>
+        <input type="password" id="csrftoken" placeholder="Paste your csrftoken cookie" required />
+      </div>
+      <button type="submit" id="login-btn">Login</button>
+      <div id="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ---------- FETCH PROGRESS VIEW ---------- -->
+<div id="fetch-view">
+  <div class="progress-box">
+    <h2>Fetching Your Non-Followers</h2>
+
+    <div class="steps-container" id="steps-container">
+      <div class="step active" data-step="Fetching followers">
+        <div class="step-icon">1</div>
+        <div class="step-content">
+          <div class="step-title">Fetching followers</div>
+          <div class="step-bar"><div class="step-bar-fill"></div></div>
+          <div class="step-percent"><span class="percent">0</span>%</div>
+          <div class="step-log"></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="Fetching following">
+        <div class="step-icon">2</div>
+        <div class="step-content">
+          <div class="step-title">Fetching following</div>
+          <div class="step-bar"><div class="step-bar-fill"></div></div>
+          <div class="step-percent"><span class="percent">0</span>%</div>
+          <div class="step-log"></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="Generating non-followers list">
+        <div class="step-icon">3</div>
+        <div class="step-content">
+          <div class="step-title">Generating non-followers list</div>
+          <div class="step-bar"><div class="step-bar-fill"></div></div>
+          <div class="step-percent"><span class="percent">0</span>%</div>
+          <div class="step-log"></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="Fetching follower counts">
+        <div class="step-icon">4</div>
+        <div class="step-content">
+          <div class="step-title">Fetching follower counts</div>
+          <div class="step-bar"><div class="step-bar-fill"></div></div>
+          <div class="step-percent"><span class="percent">0</span>%</div>
+          <div class="step-log"></div>
+        </div>
+      </div>
+
+      <div class="step" data-step="Saving results">
+        <div class="step-icon">5</div>
+        <div class="step-content">
+          <div class="step-title">Saving results</div>
+          <div class="step-bar"><div class="step-bar-fill"></div></div>
+          <div class="step-percent"><span class="percent">0</span>%</div>
+          <div class="step-log"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="completion-message" id="completion-message">
+      ✓ All done! Redirecting to your non-followers list...
+    </div>
+  </div>
+</div>
+
+<!-- ---------- MAIN GRID VIEW ---------- -->
+<div id="grid-view" style="display:none;">
+  <h1>Instagram Non-Followers</h1>
+
+  <div id="top-bar">
+    <span id="count">0 selected</span>
+    <button id="filter">Show under 10k followers</button>
+    <button id="bulk" disabled>Unfollow selected</button>
+    <button id="logout-btn">Logout</button>
+  </div>
+
+  <div id="grid"></div>
+  <div id="log"></div>
+</div>
+
+<script>
+const IMAGE_PROXY = "/img?url=";
+const $ = q => document.querySelector(q);
+const log = msg => { const l = $('#log'); l.textContent = msg; l.style.display='block'; console.log(msg); };
+
+let fullList = [];
+let isFiltered = false;
+let session = null;
+
+/* ---------- Session Management ---------- */
+function loadSession() {
+  const stored = localStorage.getItem("instagram_session");
+  return stored ? JSON.parse(stored) : null;
+}
+
+function saveSession(sess) {
+  localStorage.setItem("instagram_session", JSON.stringify(sess));
+  session = sess;
+}
+
+function clearSession() {
+  localStorage.removeItem("instagram_session");
+  session = null;
+}
+
+function showLoginView() {
+  $('#login-view').style.display = 'flex';
+  $('#fetch-view').style.display = 'none';
+  $('#grid-view').style.display = 'none';
+}
+
+function showFetchView() {
+  $('#login-view').style.display = 'none';
+  $('#fetch-view').style.display = 'block';
+  $('#grid-view').style.display = 'none';
+}
+
+function showGridView() {
+  $('#login-view').style.display = 'none';
+  $('#fetch-view').style.display = 'none';
+  $('#grid-view').style.display = 'block';
+}
+
+/* ---------- Login ---------- */
+async function handleLogin(e) {
+  e.preventDefault();
+  const sessionid = $('#sessionid').value.trim();
+  const csrftoken = $('#csrftoken').value.trim();
+  const errorEl = $('#login-error');
+
+  if (!sessionid || !csrftoken) {
+    errorEl.textContent = 'Please enter both sessionid and csrftoken';
+    errorEl.style.display = 'block';
+    return false;
+  }
+
+  $('#login-btn').disabled = true;
+  errorEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionid, csrftoken })
+    });
+
+    if (!res.ok) {
+      throw new Error('Invalid credentials or network error');
+    }
+
+    const { uid, username } = await res.json();
+    saveSession({ sessionid, csrftoken, uid, username });
+    showFetchView();
+    await fetchNonFollowers(sessionid, csrftoken, uid);
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+    $('#login-btn').disabled = false;
+  }
+
+  return false;
+}
+
+/* ---------- Fetch Non-Followers ---------- */
+async function fetchNonFollowers(sessionid, csrftoken, uid) {
+  let currentStep = null;
+  let currentStepEl = null;
+
+  try {
+    const res = await fetch('/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionid, csrftoken, uid })
+    });
+
+    if (!res.ok) throw new Error('Fetch request failed');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.msg) {
+              const msg = data.msg.trim();
+
+              if (msg.startsWith('[STEP_START]')) {
+                const stepName = msg.replace('[STEP_START]', '').trim();
+                const steps = document.querySelectorAll('.step');
+                steps.forEach(s => {
+                  if (s.dataset.step === stepName) {
+                    document.querySelectorAll('.step').forEach(st => st.classList.remove('active'));
+                    s.classList.add('active');
+                    currentStepEl = s;
+                    currentStep = stepName;
+                  }
+                });
+              } else if (msg.startsWith('[STEP_COMPLETE]')) {
+                if (currentStepEl) {
+                  currentStepEl.classList.remove('active');
+                  currentStepEl.classList.add('done');
+                  const barFill = currentStepEl.querySelector('.step-bar-fill');
+                  const percent = currentStepEl.querySelector('.percent');
+                  barFill.style.width = '100%';
+                  percent.textContent = '100';
+                }
+              } else if (msg.startsWith('[RATE_LIMIT]')) {
+                if (currentStepEl) {
+                  const logDiv = currentStepEl.querySelector('.step-log');
+                  const logLine = document.createElement('div');
+                  logLine.className = 'log-line rate-limit';
+                  logLine.textContent = msg.replace('[RATE_LIMIT]', '').trim();
+                  logDiv.appendChild(logLine);
+                  logDiv.scrollTop = logDiv.scrollHeight;
+                }
+              } else if (msg.includes('[') && msg.includes('%]')) {
+                const match = msg.match(/\[(\d+)%\]/);
+                if (match && currentStepEl) {
+                  const percent = parseInt(match[1]);
+                  const barFill = currentStepEl.querySelector('.step-bar-fill');
+                  const percentEl = currentStepEl.querySelector('.percent');
+                  barFill.style.width = percent + '%';
+                  percentEl.textContent = percent;
+                  const logDiv = currentStepEl.querySelector('.step-log');
+                  const logLine = document.createElement('div');
+                  logLine.className = 'log-line';
+                  logLine.textContent = msg;
+                  logDiv.appendChild(logLine);
+                  logDiv.scrollTop = logDiv.scrollHeight;
+                } else if (msg.includes('⏳')) {
+                  // Countdown timer messages
+                  if (currentStepEl) {
+                    const logDiv = currentStepEl.querySelector('.step-log');
+                    const logLine = document.createElement('div');
+                    logLine.className = 'log-line countdown';
+                    logLine.textContent = msg;
+                    logDiv.appendChild(logLine);
+                    logDiv.scrollTop = logDiv.scrollHeight;
+                  }
+                }
+              } else if (msg && !msg.startsWith('Downloading') && !msg.startsWith('Pre-wait') && !msg.startsWith('[INIT]')) {
+                if (currentStepEl) {
+                  const logDiv = currentStepEl.querySelector('.step-log');
+                  const logLine = document.createElement('div');
+                  logLine.className = 'log-line';
+                  logLine.textContent = msg;
+                  logDiv.appendChild(logLine);
+                  logDiv.scrollTop = logDiv.scrollHeight;
+                }
+              }
+            }
+
+            if (data.done) {
+              document.getElementById('completion-message').classList.add('show');
+              setTimeout(async () => {
+                await loadAndShowNonFollowers(uid);
+                showGridView();
+              }, 1500);
+            }
+            if (data.error) {
+              throw new Error(data.error);
+            }
+          } catch (e) {
+            console.log('Parse error:', e);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+/* ---------- Load and Show Non-Followers ---------- */
+async function loadAndShowNonFollowers(uid) {
+  try {
+    const res = await fetch(`/.ig_cache/${uid}/non_followers.json`);
+    if (!res.ok) throw new Error('non_followers.json not found');
+    fullList = await res.json();
+    render(fullList);
+  } catch (err) {
+    log(`Error loading non-followers: ${err.message}`);
+  }
+}
+
+/* ---------- API calls ---------- */
+async function unfollowUser(pk) {
+  const res = await fetch('/unfollow', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      pk,
+      sessionid: session.sessionid,
+      csrftoken: session.csrftoken,
+      uid: session.uid
+    })
+  });
+  if (!res.ok) throw `HTTP ${res.status}`;
+  return res.json();
+}
+
+async function checkUser(pk) {
+  const res = await fetch('/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      pk,
+      sessionid: session.sessionid,
+      csrftoken: session.csrftoken
+    })
+  });
+  if (!res.ok) throw `HTTP ${res.status}`;
+  return res.json();
+}
+
+/* ---------- Build Grid ---------- */
+function render(list) {
+  const grid = $('#grid');
+  grid.innerHTML = '';
+  list.forEach(u => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const imgUrl = IMAGE_PROXY + encodeURIComponent(u.profile_pic_url);
+    card.innerHTML = `
+      <img src="${imgUrl}" alt="${u.username}" loading="lazy"
+           onerror="this.src='https://via.placeholder.com/150'">
+      <div class="uname">${u.username}</div>
+      <div class="followers">${u.follower_count || 0} followers</div>
+      <a href="https://instagram.com/${u.username}" target="_blank">@${u.username}</a>
+      <button data-pk="${u.pk}" class="unfollow">Unfollow</button>
+      <button data-pk="${u.pk}" class="check">Check</button>
+    `;
+    grid.appendChild(card);
+  });
+  attachHandlers();
+}
+
+/* ---------- Handlers ---------- */
+function attachHandlers() {
+  document.querySelectorAll('.card button.unfollow').forEach(btn => {
+    btn.onclick = async () => {
+      const pk = btn.dataset.pk;
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        await unfollowUser(pk);
+        fullList = fullList.filter(u => u.pk != pk);
+        btn.closest('.card').remove();
+        log(`Unfollowed user ${pk}`);
+      } catch (e) {
+        btn.textContent = 'Retry';
+        btn.disabled = false;
+        log(`Error unfollowing ${pk}: ${e}`);
+      }
+    };
+  });
+
+  document.querySelectorAll('.card button.check').forEach(btn => {
+    btn.onclick = async () => {
+      const pk = btn.dataset.pk;
+      btn.disabled = true;
+      btn.textContent = 'Checking…';
+      try {
+        const data = await checkUser(pk);
+        btn.textContent = data.follows_back ? '✅ Follows Back' : '❌ Not Following';
+      } catch (e) {
+        btn.textContent = 'Retry';
+        btn.disabled = false;
+        log(`Error checking ${pk}: ${e}`);
+      }
+    };
+  });
+}
+
+/* ---------- Filter Handler ---------- */
+$('#filter').onclick = () => {
+  isFiltered = !isFiltered;
+  const list = isFiltered ? fullList.filter(u => (u.follower_count || 0) < 10000) : fullList;
+  render(list);
+  $('#filter').textContent = isFiltered ? 'Show All' : 'Show under 10k followers';
+};
+
+/* ---------- Logout Handler ---------- */
+$('#logout-btn').onclick = () => {
+  clearSession();
+  fullList = [];
+  document.getElementById('login-form').reset();
+  showLoginView();
+};
+
+/* ---------- Initialize ---------- */
+window.addEventListener('load', async () => {
+  session = loadSession();
+  if (session) {
+    showFetchView();
+    await loadAndShowNonFollowers(session.uid);
+    showGridView();
+  } else {
+    showLoginView();
+  }
+});
+</script>
+
+</body>
+</html>
