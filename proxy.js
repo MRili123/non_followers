@@ -14,7 +14,7 @@ app.use(express.json());
 
 const SESSIONS_FILE = "sessions.json";
 const PORT = process.env.PORT || 8000;
-const PYTHON_PATH = process.env.PYTHON_PATH || "python3";
+const PYTHON_PATH = process.env.PYTHON_PATH || "C:\\Users\\ilias\\AppData\\Local\\Programs\\Python\\Python311\\python.exe";
 
 // Admin auth
 const adminTokens = new Set();
