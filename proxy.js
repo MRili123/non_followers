@@ -12,7 +12,8 @@ const app = express();
 app.use(express.json());
 
 const SESSIONS_FILE = "sessions.json";
-const PYTHON_PATH = "C:/Users/ilias/AppData/Local/Programs/Python/Python315/python.exe";
+const PORT = process.env.PORT || 8000;
+const PYTHON_PATH = process.env.PYTHON_PATH || "python3";
 
 function loadSessions() {
   if (!fs.existsSync(SESSIONS_FILE)) return [];
@@ -168,4 +169,4 @@ app.use("/.ig_cache", express.static(path.join(__dirname,".ig_cache")));
 app.use(express.static(__dirname));
 
 /* ---------- START SERVER ---------- */
-app.listen(8000,()=>console.log("Server running → http://localhost:8000"));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

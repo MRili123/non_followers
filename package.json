@@ -1,7 +1,15 @@
 {
   "type": "module",
+  "scripts": {
+    "start": "node proxy.js",
+    "dev": "node proxy.js"
+  },
   "dependencies": {
     "express": "^5.2.1",
     "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.8"
   }
 }
