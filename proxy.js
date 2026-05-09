@@ -14,7 +14,18 @@ app.use(express.json());
 
 const SESSIONS_FILE = "sessions.json";
 const PORT = process.env.PORT || 8000;
-const PYTHON_PATH = process.env.PYTHON_PATH || "C:\\Users\\ilias\\AppData\\Local\\Programs\\Python\\Python311\\python.exe";
+
+// Python path - use environment variable or detect platform
+let PYTHON_PATH = process.env.PYTHON_PATH;
+if (!PYTHON_PATH) {
+  // Windows
+  if (process.platform === 'win32') {
+    PYTHON_PATH = "C:\\Users\\ilias\\AppData\\Local\\Programs\\Python\\Python311\\python.exe";
+  } else {
+    // Linux/Railway
+    PYTHON_PATH = "python3";
+  }
+}
 
 // Admin auth
 const adminTokens = new Set();
