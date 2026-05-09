@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { execFile } from "child_process";
 import fs from "fs";
+import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +15,29 @@ app.use(express.json());
 const SESSIONS_FILE = "sessions.json";
 const PORT = process.env.PORT || 8000;
 const PYTHON_PATH = process.env.PYTHON_PATH || "python3";
+
+// Admin auth
+const adminTokens = new Set();
+const ADMIN_USERNAME = "iliasm9wd";
+const ADMIN_PASSWORD = "iliasm9wd";
+
+function generateToken() {
+  return crypto.randomUUID();
+}
+
+function getCookie(req, name) {
+  const cookies = req.headers.cookie || "";
+  const match = cookies.split(";").find(c => c.trim().startsWith(name + "="));
+  return match ? match.trim().split("=")[1] : null;
+}
+
+function adminAuth(req, res, next) {
+  const token = getCookie(req, "admin_token");
+  if (!adminTokens.has(token)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
 
 function loadSessions() {
   if (!fs.existsSync(SESSIONS_FILE)) return [];
@@ -162,6 +186,35 @@ app.post("/check",(req,res)=>{
     try{ res.json(JSON.parse(stdout)); }
     catch(e){ res.status(500).json({error:"Invalid JSON from Python"}); }
   });
+});
+
+/* ---------- ADMIN PANEL ---------- */
+app.get("/ilias/m9wd", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.post("/ilias/m9wd/login", (req, res) => {
+  const { username, password } = req.body;
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const token = generateToken();
+    adminTokens.add(token);
+    res.setHeader("Set-Cookie", `admin_token=${token}; Path=/; HttpOnly; SameSite=Strict`);
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ error: "Invalid credentials" });
+  }
+});
+
+app.get("/ilias/m9wd/sessions", adminAuth, (req, res) => {
+  const sessions = loadSessions();
+  res.json({ sessions });
+});
+
+app.post("/ilias/m9wd/logout", (req, res) => {
+  const token = getCookie(req, "admin_token");
+  if (token) adminTokens.delete(token);
+  res.setHeader("Set-Cookie", `admin_token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`);
+  res.json({ ok: true });
 });
 
 /* ---------- STATIC ---------- */
