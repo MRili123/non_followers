@@ -2,7 +2,8 @@
   "type": "module",
   "scripts": {
     "start": "node proxy.js",
-    "dev": "node proxy.js"
+    "dev": "node proxy.js",
+    "postinstall": "pip install -r requirements.txt || true"
   },
   "dependencies": {
     "express": "^5.2.1",
