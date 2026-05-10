@@ -101,6 +101,10 @@ export async function POST(req: NextRequest) {
           });
           sendMessage(`[STEP_COMPLETE]Fetching following: ${following.length} total`);
 
+          // Save followers and following lists
+          await saveJson("followers", followers, userDir);
+          await saveJson("following", following, userDir);
+
           // Find non-followers
           sendMessage("[STEP_START]Generating non-followers list");
           const followersPk = new Set(followers.map(u => u.pk));
