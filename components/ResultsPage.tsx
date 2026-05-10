@@ -39,7 +39,7 @@ export default function ResultsPage({
   accountStats?: AccountStats;
   sessionStartTime?: number;
 }) {
-  const [activeTab, setActiveTab] = useState<"followers" | "following" | "non-followers">("followers");
+  const [activeTab, setActiveTab] = useState<"home" | "followers" | "following" | "non-followers">("home");
   const [searchQuery, setSearchQuery] = useState("");
   const [minFollowersFilter, setMinFollowersFilter] = useState(0);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
@@ -329,16 +329,183 @@ export default function ResultsPage({
           {/* Page Header */}
           <div style={{ marginBottom: "30px" }}>
             <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#262626", margin: "0 0 10px 0" }}>
+              {activeTab === "home" && "Welcome"}
               {activeTab === "followers" && "Followers"}
               {activeTab === "following" && "Following"}
               {activeTab === "non-followers" && "Non-Followers"}
             </h1>
             <p style={{ fontSize: "14px", color: "#8e8e8e", margin: "0" }}>
+              {activeTab === "home" && `@${accountStats?.username}`}
               {activeTab === "followers" && `${followers.length} users follow you`}
               {activeTab === "following" && `You are following ${following.length} users`}
               {activeTab === "non-followers" && `${nonFollowers.length} users don't follow you back`}
             </p>
           </div>
+
+          {/* Home Page */}
+          {activeTab === "home" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", maxWidth: "900px" }}>
+              {/* Profile Card */}
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: "16px",
+                  padding: "30px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                  textAlign: "center",
+                }}
+              >
+                {accountStats?.profile_pic_url && (
+                  <img
+                    src={`/api/img?url=${encodeURIComponent(accountStats.profile_pic_url)}`}
+                    alt={accountStats?.username}
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      marginBottom: "20px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                )}
+                <h2 style={{ margin: "0 0 5px 0", fontSize: "22px", color: "#262626", fontWeight: "700" }}>
+                  @{accountStats?.username}
+                </h2>
+                {accountStats?.full_name && (
+                  <p style={{ margin: "0 0 20px 0", fontSize: "14px", color: "#8e8e8e" }}>
+                    {accountStats.full_name}
+                  </p>
+                )}
+
+                {/* Stats */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ background: "#f5f7fa", padding: "15px", borderRadius: "8px", border: "1px solid #e0e0e0" }}>
+                    <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Followers</div>
+                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#0095f6" }}>
+                      {(accountStats?.follower_count || 0).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div style={{ background: "#f5f7fa", padding: "15px", borderRadius: "8px", border: "1px solid #e0e0e0" }}>
+                    <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Following</div>
+                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#31a24c" }}>
+                      {(accountStats?.following_count || 0).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div style={{ background: "#f5f7fa", padding: "15px", borderRadius: "8px", border: "1px solid #e0e0e0" }}>
+                    <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Non-Followers</div>
+                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#ed4956" }}>
+                      {(accountStats?.non_followers_count || 0).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Donut Chart */}
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: "16px",
+                  padding: "30px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "700", color: "#262626" }}>
+                  Engagement Overview
+                </h3>
+
+                {/* SVG Donut Chart */}
+                <svg width="200" height="200" viewBox="0 0 200 200" style={{ marginBottom: "20px" }}>
+                  {(() => {
+                    const followers = accountStats?.follower_count || 0;
+                    const following = accountStats?.following_count || 0;
+                    const nonFollowers = accountStats?.non_followers_count || 0;
+                    const total = followers + following + nonFollowers;
+
+                    if (total === 0) return null;
+
+                    const followersPercent = (followers / total) * 100;
+                    const followingPercent = (following / total) * 100;
+                    const nonFollowersPercent = (nonFollowers / total) * 100;
+
+                    const getPath = (startPercent: number, endPercent: number, radius: number) => {
+                      const startAngle = (startPercent / 100) * 2 * Math.PI - Math.PI / 2;
+                      const endAngle = (endPercent / 100) * 2 * Math.PI - Math.PI / 2;
+
+                      const x1 = 100 + radius * Math.cos(startAngle);
+                      const y1 = 100 + radius * Math.sin(startAngle);
+                      const x2 = 100 + radius * Math.cos(endAngle);
+                      const y2 = 100 + radius * Math.sin(endAngle);
+
+                      const largeArc = endPercent - startPercent > 50 ? 1 : 0;
+
+                      const innerRadius = 60;
+                      const x3 = 100 + innerRadius * Math.cos(endAngle);
+                      const y3 = 100 + innerRadius * Math.sin(endAngle);
+                      const x4 = 100 + innerRadius * Math.cos(startAngle);
+                      const y4 = 100 + innerRadius * Math.sin(startAngle);
+
+                      return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+                    };
+
+                    return (
+                      <>
+                        {/* Followers slice */}
+                        <path
+                          d={getPath(0, followersPercent, 80)}
+                          fill="#0095f6"
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                        {/* Following slice */}
+                        <path
+                          d={getPath(followersPercent, followersPercent + followingPercent, 80)}
+                          fill="#31a24c"
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                        {/* Non-followers slice */}
+                        <path
+                          d={getPath(followersPercent + followingPercent, 100, 80)}
+                          fill="#ed4956"
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                      </>
+                    );
+                  })()}
+                </svg>
+
+                {/* Legend */}
+                <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "12px", height: "12px", background: "#0095f6", borderRadius: "2px" }} />
+                    <div style={{ fontSize: "12px", color: "#262626" }}>
+                      Followers: <strong>{((((accountStats?.follower_count || 0) / ((accountStats?.follower_count || 0) + (accountStats?.following_count || 0) + (accountStats?.non_followers_count || 0))) * 100) || 0).toFixed(1)}%</strong>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "12px", height: "12px", background: "#31a24c", borderRadius: "2px" }} />
+                    <div style={{ fontSize: "12px", color: "#262626" }}>
+                      Following: <strong>{((((accountStats?.following_count || 0) / ((accountStats?.follower_count || 0) + (accountStats?.following_count || 0) + (accountStats?.non_followers_count || 0))) * 100) || 0).toFixed(1)}%</strong>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "12px", height: "12px", background: "#ed4956", borderRadius: "2px" }} />
+                    <div style={{ fontSize: "12px", color: "#262626" }}>
+                      Non-Followers: <strong>{((((accountStats?.non_followers_count || 0) / ((accountStats?.follower_count || 0) + (accountStats?.following_count || 0) + (accountStats?.non_followers_count || 0))) * 100) || 0).toFixed(1)}%</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Filters and Search */}
           <div style={{ display: "flex", gap: "10px", marginBottom: "20px", alignItems: "center", flexWrap: "wrap" }}>
@@ -594,7 +761,10 @@ export default function ResultsPage({
             </div>
           )}
 
-          {/* Notification */}
+          {/* Only show filters and users if not on home */}
+          {activeTab !== "home" && (
+            <>
+              {/* Notification */}
           {notification && (
             <div
               style={{
@@ -771,6 +941,8 @@ export default function ResultsPage({
               ))
             )}
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>
