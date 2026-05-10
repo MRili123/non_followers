@@ -39,10 +39,9 @@ export default function ResultsPage({
   accountStats?: AccountStats;
   sessionStartTime?: number;
 }) {
-  const [activeTab, setActiveTab] = useState<"followers" | "following" | "non-followers">("followers");
+  const [activeTab, setActiveTab] = useState<"followers" | "following">("followers");
   const [searchQuery, setSearchQuery] = useState("");
   const [minFollowersFilter, setMinFollowersFilter] = useState(0);
-  const [showOnlyNonFollowers, setShowOnlyNonFollowers] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
@@ -53,22 +52,14 @@ export default function ResultsPage({
   const nonFollowerPks = new Set(nonFollowers.map(u => u.pk));
 
   const getCurrentList = () => {
-    let list: User[] = [];
     switch (activeTab) {
       case "followers":
-        list = followers;
-        break;
+        return followers;
       case "following":
-        list = following;
-        if (showOnlyNonFollowers) {
-          list = list.filter(u => nonFollowerPks.has(u.pk));
-        }
-        break;
-      case "non-followers":
-        list = nonFollowers;
-        break;
+        return following;
+      default:
+        return [];
     }
-    return list;
   };
 
   const isNonFollower = (pk: string) => nonFollowerPks.has(pk);
@@ -213,7 +204,7 @@ export default function ResultsPage({
         <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           {/* Tabs */}
           <div style={{ display: "flex", gap: "10px", marginBottom: "30px", borderBottom: "2px solid #e0e0e0" }}>
-            {["followers", "following", "non-followers"].map((tab) => (
+            {["followers", "following"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -240,7 +231,6 @@ export default function ResultsPage({
               >
                 {tab === "followers" && `Followers (${followers.length})`}
                 {tab === "following" && `Following (${following.length})`}
-                {tab === "non-followers" && `Non-Followers (${nonFollowers.length})`}
               </button>
             ))}
           </div>
@@ -278,30 +268,6 @@ export default function ResultsPage({
                 fontFamily: "inherit",
               }}
             />
-            {activeTab === "following" && (
-              <button
-                onClick={() => setShowOnlyNonFollowers(!showOnlyNonFollowers)}
-                style={{
-                  padding: "10px 15px",
-                  background: showOnlyNonFollowers ? "#ed4956" : "#f0f0f0",
-                  color: showOnlyNonFollowers ? "white" : "#262626",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseOver={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = showOnlyNonFollowers ? "#d43a52" : "#e0e0e0";
-                }}
-                onMouseOut={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = showOnlyNonFollowers ? "#ed4956" : "#f0f0f0";
-                }}
-              >
-                Non-Followers Only
-              </button>
-            )}
           </div>
 
           {/* Notification */}
@@ -353,12 +319,12 @@ export default function ResultsPage({
                     el.style.transform = "translateY(0)";
                   }}
                 >
-                  {isNonFollower(user.pk) && activeTab === "following" && (
+                  {activeTab === "following" && isNonFollower(user.pk) && (
                     <div
                       style={{
                         position: "absolute",
-                        top: "-10px",
-                        right: "-10px",
+                        top: "10px",
+                        right: "10px",
                         background: "#ed4956",
                         color: "white",
                         padding: "4px 8px",
@@ -368,7 +334,7 @@ export default function ResultsPage({
                         whiteSpace: "nowrap",
                       }}
                     >
-                      Doesn't Follow Back
+                      ✕ Not Following Back
                     </div>
                   )}
                   {user.profile_pic_url && (
