@@ -207,101 +207,169 @@ export default function ResultsPage({
         style={{
           width: "280px",
           background: "white",
-          padding: "30px 20px",
+          padding: "20px 0",
           boxShadow: "2px 0 10px rgba(0,0,0,0.1)",
           maxHeight: "100vh",
           overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#262626", margin: "0 0 20px 0" }}>
-          Dashboard
-        </h2>
+        {/* Home Section */}
+        <div style={{ padding: "0 20px", marginBottom: "30px" }}>
+          <button
+            onClick={() => {
+              setActiveTab("followers");
+              setSearchQuery("");
+              setMinFollowersFilter(0);
+              setSelectedUsers(new Set());
+            }}
+            style={{
+              width: "100%",
+              padding: "12px 15px",
+              background: "#0095f6",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.background = "#0080d0")
+            }
+            onMouseOut={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.background = "#0095f6")
+            }
+          >
+            🏠 Home
+          </button>
+        </div>
 
-        {/* Stats */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "30px" }}>
-          <div style={{ background: "#f5f7fa", padding: "12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e0e0e0" }}>
-            <div style={{ fontSize: "22px", fontWeight: "700", color: "#0095f6" }}>
-              {accountStats?.follower_count || 0}
-            </div>
-            <div style={{ fontSize: "11px", color: "#8e8e8e", marginTop: "4px" }}>Followers</div>
+        {/* User Section */}
+        <div style={{ padding: "0 20px", marginBottom: "30px", borderBottom: "1px solid #e0e0e0", paddingBottom: "20px" }}>
+          <div style={{ marginBottom: "15px" }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "700", color: "#262626", textTransform: "uppercase" }}>
+              User Profile
+            </h3>
           </div>
 
-          <div style={{ background: "#f5f7fa", padding: "12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e0e0e0" }}>
-            <div style={{ fontSize: "22px", fontWeight: "700", color: "#31a24c" }}>
-              {accountStats?.following_count || 0}
+          {/* User Stats */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ background: "#f5f7fa", padding: "10px 12px", borderRadius: "6px", border: "1px solid #e0e0e0" }}>
+              <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Followers</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#0095f6" }}>
+                {(accountStats?.follower_count || 0).toLocaleString()}
+              </div>
             </div>
-            <div style={{ fontSize: "11px", color: "#8e8e8e", marginTop: "4px" }}>Following</div>
-          </div>
 
-          <div style={{ background: "#f5f7fa", padding: "12px", borderRadius: "8px", textAlign: "center", border: "1px solid #e0e0e0" }}>
-            <div style={{ fontSize: "22px", fontWeight: "700", color: "#ed4956" }}>
-              {accountStats?.non_followers_count || 0}
+            <div style={{ background: "#f5f7fa", padding: "10px 12px", borderRadius: "6px", border: "1px solid #e0e0e0" }}>
+              <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Following</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#31a24c" }}>
+                {(accountStats?.following_count || 0).toLocaleString()}
+              </div>
             </div>
-            <div style={{ fontSize: "11px", color: "#8e8e8e", marginTop: "4px" }}>Non-Followers</div>
+
+            <div style={{ background: "#f5f7fa", padding: "10px 12px", borderRadius: "6px", border: "1px solid #e0e0e0" }}>
+              <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Non-Followers</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#ed4956" }}>
+                {(accountStats?.non_followers_count || 0).toLocaleString()}
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Navigation Section */}
+        <div style={{ padding: "0 20px", marginBottom: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "700", color: "#262626", textTransform: "uppercase" }}>
+            Sections
+          </h3>
+
+          {[
+            { id: "followers", label: "👥 Followers", icon: "👥" },
+            { id: "following", label: "➡️ Following", icon: "➡️" },
+            { id: "non-followers", label: "✕ Non-Followers", icon: "✕" },
+          ].map((section) => (
+            <button
+              key={section.id}
+              onClick={() => {
+                setActiveTab(section.id as any);
+                setSearchQuery("");
+                setMinFollowersFilter(0);
+                setSelectedUsers(new Set());
+              }}
+              style={{
+                padding: "12px 15px",
+                background: activeTab === section.id ? "#0095f6" : "#f5f7fa",
+                color: activeTab === section.id ? "white" : "#262626",
+                border: "1px solid " + (activeTab === section.id ? "#0095f6" : "#e0e0e0"),
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                textAlign: "left",
+              }}
+              onMouseOver={(e) => {
+                if (activeTab !== section.id) {
+                  (e.currentTarget as HTMLButtonElement).style.background = "#e0e0e0";
+                }
+              }}
+              onMouseOut={(e) => {
+                if (activeTab !== section.id) {
+                  (e.currentTarget as HTMLButtonElement).style.background = "#f5f7fa";
+                }
+              }}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+
         {/* Disconnect Button */}
-        <button
-          onClick={handleDisconnectClick}
-          style={{
-            width: "100%",
-            padding: "10px",
-            background: "#ed4956",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "13px",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-          }}
-          onMouseOver={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background = "#d43a52")
-          }
-          onMouseOut={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background = "#ed4956")
-          }
-        >
-          Disconnect
-        </button>
+        <div style={{ padding: "20px 20px", borderTop: "1px solid #e0e0e0" }}>
+          <button
+            onClick={handleDisconnectClick}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "#ed4956",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+            }}
+            onMouseOver={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.background = "#d43a52")
+            }
+            onMouseOut={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.background = "#ed4956")
+            }
+          >
+            🔌 Disconnect
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
       <div style={{ flex: 1, padding: "30px 20px", overflowY: "auto", maxHeight: "100vh" }}>
         <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "30px", borderBottom: "2px solid #e0e0e0" }}>
-            {["followers", "following", "non-followers"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => {
-                  setActiveTab(tab as any);
-                  setSearchQuery("");
-                  setMinFollowersFilter(0);
-                }}
-                style={{
-                  padding: "12px 20px",
-                  background: activeTab === tab ? "#0095f6" : "transparent",
-                  color: activeTab === tab ? "white" : "#8e8e8e",
-                  border: "none",
-                  borderRadius: "8px 8px 0 0",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseOver={(e) => {
-                  if (activeTab !== tab) {
-                    (e.currentTarget as HTMLButtonElement).color = "#262626";
-                  }
-                }}
-              >
-                {tab === "followers" && `Followers (${followers.length})`}
-                {tab === "following" && `Following (${following.length})`}
-                {tab === "non-followers" && `Non-Followers (${nonFollowers.length})`}
-              </button>
-            ))}
+          {/* Page Header */}
+          <div style={{ marginBottom: "30px" }}>
+            <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#262626", margin: "0 0 10px 0" }}>
+              {activeTab === "followers" && "Followers"}
+              {activeTab === "following" && "Following"}
+              {activeTab === "non-followers" && "Non-Followers"}
+            </h1>
+            <p style={{ fontSize: "14px", color: "#8e8e8e", margin: "0" }}>
+              {activeTab === "followers" && `${followers.length} users follow you`}
+              {activeTab === "following" && `You are following ${following.length} users`}
+              {activeTab === "non-followers" && `${nonFollowers.length} users don't follow you back`}
+            </p>
           </div>
 
           {/* Filters and Search */}
