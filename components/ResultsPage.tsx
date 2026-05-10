@@ -39,7 +39,7 @@ export default function ResultsPage({
   accountStats?: AccountStats;
   sessionStartTime?: number;
 }) {
-  const [activeTab, setActiveTab] = useState<"followers" | "following">("followers");
+  const [activeTab, setActiveTab] = useState<"followers" | "following" | "non-followers">("followers");
   const [searchQuery, setSearchQuery] = useState("");
   const [minFollowersFilter, setMinFollowersFilter] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -57,6 +57,8 @@ export default function ResultsPage({
         return followers;
       case "following":
         return following;
+      case "non-followers":
+        return nonFollowers;
       default:
         return [];
     }
@@ -204,7 +206,7 @@ export default function ResultsPage({
         <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           {/* Tabs */}
           <div style={{ display: "flex", gap: "10px", marginBottom: "30px", borderBottom: "2px solid #e0e0e0" }}>
-            {["followers", "following"].map((tab) => (
+            {["followers", "following", "non-followers"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -231,6 +233,7 @@ export default function ResultsPage({
               >
                 {tab === "followers" && `Followers (${followers.length})`}
                 {tab === "following" && `Following (${following.length})`}
+                {tab === "non-followers" && `Non-Followers (${nonFollowers.length})`}
               </button>
             ))}
           </div>
