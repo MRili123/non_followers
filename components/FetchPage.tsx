@@ -179,7 +179,13 @@ export default function FetchPage({
         const statsResponse = await fetch(`/api/stats?uid=${uid}`);
         const stats = statsResponse.ok ? await statsResponse.json() : null;
 
-        onComplete(users, stats);
+        const followersResponse = await fetch(`/api/followers?uid=${uid}`);
+        const followersList = followersResponse.ok ? await followersResponse.json() : [];
+
+        const followingResponse = await fetch(`/api/following?uid=${uid}`);
+        const followingList = followingResponse.ok ? await followingResponse.json() : [];
+
+        onComplete(users, stats, followersList, followingList);
       } catch (err) {
         console.error("Failed to load results:", err);
         onComplete([]);

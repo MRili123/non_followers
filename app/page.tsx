@@ -15,6 +15,8 @@ export default function Home() {
   const [username, setUsername] = useState("");
   const [sessionid, setSessionid] = useState("");
   const [csrftoken, setCsrftoken] = useState("");
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [following, setFollowing] = useState<any[]>([]);
   const [nonFollowers, setNonFollowers] = useState<any[]>([]);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [accountStats, setAccountStats] = useState<any>(null);
@@ -30,6 +32,8 @@ export default function Home() {
         setUsername(session.username);
         setSessionid(session.sessionid);
         setCsrftoken(session.csrftoken);
+        setFollowers(session.followers || []);
+        setFollowing(session.following || []);
         setNonFollowers(session.nonFollowers || []);
         setSessionStartTime(session.sessionStartTime);
         setAccountStats(session.accountStats);
@@ -93,13 +97,17 @@ export default function Home() {
       csrftoken: csrf,
       sessionStartTime: startTime,
       view: "fetch",
+      followers: [],
+      following: [],
       nonFollowers: [],
       accountStats: null,
     }));
   };
 
-  const handleFetchComplete = (users: any[], stats?: any) => {
+  const handleFetchComplete = (users: any[], stats?: any, followersList?: any[], followingList?: any[]) => {
     setNonFollowers(users);
+    if (followersList) setFollowers(followersList);
+    if (followingList) setFollowing(followingList);
     const updatedStats = stats ? { ...stats, non_followers_count: users.length } : accountStats;
     if (stats) setAccountStats(updatedStats);
     setView("results");
@@ -110,6 +118,8 @@ export default function Home() {
       const session = JSON.parse(currentSession);
       localStorage.setItem("session", JSON.stringify({
         ...session,
+        followers: followersList || session.followers || [],
+        following: followingList || session.following || [],
         nonFollowers: users,
         accountStats: updatedStats,
         view: "results",
@@ -152,6 +162,8 @@ export default function Home() {
     setUsername("");
     setSessionid("");
     setCsrftoken("");
+    setFollowers([]);
+    setFollowing([]);
     setNonFollowers([]);
     setSessionStartTime(null);
     setAccountStats(null);
@@ -167,6 +179,8 @@ export default function Home() {
     setUsername("");
     setSessionid("");
     setCsrftoken("");
+    setFollowers([]);
+    setFollowing([]);
     setNonFollowers([]);
     setSessionStartTime(null);
     setAccountStats(null);
@@ -195,6 +209,8 @@ export default function Home() {
       )}
       {view === "results" && (
         <ResultsPage
+          followers={followers}
+          following={following}
           nonFollowers={nonFollowers}
           sessionid={sessionid}
           csrftoken={csrftoken}
