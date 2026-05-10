@@ -42,6 +42,7 @@ export default function ResultsPage({
   const [activeTab, setActiveTab] = useState<"followers" | "following" | "non-followers">("followers");
   const [searchQuery, setSearchQuery] = useState("");
   const [minFollowersFilter, setMinFollowersFilter] = useState(0);
+  const [showOnlyNonFollowers, setShowOnlyNonFollowers] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
@@ -49,18 +50,28 @@ export default function ResultsPage({
     username: string;
   } | null>(null);
 
+  const nonFollowerPks = new Set(nonFollowers.map(u => u.pk));
+
   const getCurrentList = () => {
+    let list: User[] = [];
     switch (activeTab) {
       case "followers":
-        return followers;
+        list = followers;
+        break;
       case "following":
-        return following;
+        list = following;
+        if (showOnlyNonFollowers) {
+          list = list.filter(u => nonFollowerPks.has(u.pk));
+        }
+        break;
       case "non-followers":
-        return nonFollowers;
-      default:
-        return [];
+        list = nonFollowers;
+        break;
     }
+    return list;
   };
+
+  const isNonFollower = (pk: string) => nonFollowerPks.has(pk);
 
   const filteredUsers = getCurrentList()
     .filter((user) => {
@@ -235,7 +246,7 @@ export default function ResultsPage({
           </div>
 
           {/* Filters and Search */}
-          <div style={{ display: "flex", gap: "15px", marginBottom: "30px" }}>
+          <div style={{ display: "flex", gap: "15px", marginBottom: "30px", alignItems: "center", flexWrap: "wrap" }}>
             <input
               type="text"
               placeholder="Search users..."
@@ -243,6 +254,7 @@ export default function ResultsPage({
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 flex: 1,
+                minWidth: "200px",
                 padding: "10px 15px",
                 border: "1px solid #e0e0e0",
                 borderRadius: "8px",
@@ -266,6 +278,30 @@ export default function ResultsPage({
                 fontFamily: "inherit",
               }}
             />
+            {activeTab === "following" && (
+              <button
+                onClick={() => setShowOnlyNonFollowers(!showOnlyNonFollowers)}
+                style={{
+                  padding: "10px 15px",
+                  background: showOnlyNonFollowers ? "#ed4956" : "#f0f0f0",
+                  color: showOnlyNonFollowers ? "white" : "#262626",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = showOnlyNonFollowers ? "#d43a52" : "#e0e0e0";
+                }}
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = showOnlyNonFollowers ? "#ed4956" : "#f0f0f0";
+                }}
+              >
+                Non-Followers Only
+              </button>
+            )}
           </div>
 
           {/* Notification */}
@@ -303,6 +339,8 @@ export default function ResultsPage({
                     boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                     transition: "all 0.3s ease",
                     cursor: "pointer",
+                    position: "relative",
+                    border: isNonFollower(user.pk) ? "2px solid #ed4956" : "none",
                   }}
                   onMouseOver={(e) => {
                     const el = e.currentTarget as HTMLDivElement;
@@ -315,6 +353,24 @@ export default function ResultsPage({
                     el.style.transform = "translateY(0)";
                   }}
                 >
+                  {isNonFollower(user.pk) && activeTab === "following" && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-10px",
+                        right: "-10px",
+                        background: "#ed4956",
+                        color: "white",
+                        padding: "4px 8px",
+                        borderRadius: "20px",
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Doesn't Follow Back
+                    </div>
+                  )}
                   {user.profile_pic_url && (
                     <img
                       src={`/api/img?url=${encodeURIComponent(user.profile_pic_url)}`}
