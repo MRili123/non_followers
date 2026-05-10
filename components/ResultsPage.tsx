@@ -219,7 +219,7 @@ export default function ResultsPage({
         <div style={{ padding: "0 20px", marginBottom: "30px" }}>
           <button
             onClick={() => {
-              setActiveTab("followers");
+              setActiveTab("home");
               setSearchQuery("");
               setMinFollowersFilter(0);
               setSelectedUsers(new Set());
