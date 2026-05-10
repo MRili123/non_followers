@@ -1,0 +1,254 @@
+:root {
+  --gap: 10px;
+  --radius: 8px;
+  --blue: #0095f6;
+  --red: #ed4956;
+  --green: #31a24c;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  background: #fafafa;
+  color: #262626;
+}
+
+h1 {
+  padding: var(--gap);
+  text-align: center;
+}
+
+/* Login */
+.login-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.login-box {
+  background: #fff;
+  padding: 40px;
+  border-radius: var(--radius);
+  border: 1px solid #dbdbdb;
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-box h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dbdbdb;
+  border-radius: var(--radius);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.btn {
+  width: 100%;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #262626;
+}
+
+.error {
+  color: var(--red);
+  font-size: 14px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* Fetch Progress */
+.fetch-view {
+  padding: 40px 20px;
+  max-width: 700px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.progress-box {
+  background: #fff;
+  border: 1px solid #dbdbdb;
+  border-radius: var(--radius);
+  padding: 40px;
+}
+
+.progress-box h2 {
+  margin-top: 0;
+  text-align: center;
+  color: #262626;
+}
+
+.steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin: 30px 0;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.step-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f0f0f0;
+  font-weight: 600;
+  color: #8e8e8e;
+  font-size: 18px;
+  position: relative;
+}
+
+.step.active .step-icon {
+  background: var(--blue);
+  color: #fff;
+  animation: spin 1s linear infinite;
+}
+
+.step.done .step-icon {
+  background: var(--green);
+  color: #fff;
+}
+
+.step.done .step-icon::after {
+  content: "✓";
+  position: absolute;
+}
+
+.step-text h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.step-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #8e8e8e;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Results */
+.results-view {
+  padding: 40px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.results-box {
+  background: #fff;
+  border: 1px solid #dbdbdb;
+  border-radius: var(--radius);
+  padding: 40px;
+}
+
+.results-box h2 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.user-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.user-card {
+  background: #f0f0f0;
+  border-radius: var(--radius);
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.user-card:hover {
+  transform: scale(1.05);
+  background: #e8e8e8;
+}
+
+.user-card img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+  object-fit: cover;
+}
+
+.user-card .username {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.user-card .follower-count {
+  font-size: 12px;
+  color: #8e8e8e;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.action-buttons button {
+  padding: 10px 20px;
+}
