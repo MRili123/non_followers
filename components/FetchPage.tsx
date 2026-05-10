@@ -168,7 +168,7 @@ export default function FetchPage({
     const handleDone = async () => {
       // Load results from API
       try {
-        const response = await fetch(`/.ig_cache/${uid}/non_followers.json`);
+        const response = await fetch(`/api/results?uid=${uid}`);
         if (response.ok) {
           const users = await response.json();
           onComplete(users);

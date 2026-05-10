@@ -25,6 +25,46 @@ export default function ResultsPage({
 }) {
   const [users, setUsers] = useState(nonFollowers);
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    isFollowing: boolean;
+    username: string;
+  } | null>(null);
+
+  const handleCheck = async (pk: string, username: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/check-follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pk, sessionid, csrftoken, uid, target_pk: pk }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setNotification({
+          message: result.message,
+          isFollowing: result.isFollowing,
+          username,
+        });
+        setTimeout(() => setNotification(null), 4000);
+      } else {
+        setNotification({
+          message: "Failed to check user",
+          isFollowing: false,
+          username,
+        });
+      }
+    } catch (err) {
+      setNotification({
+        message: "Error: " + (err instanceof Error ? err.message : "Unknown error"),
+        isFollowing: false,
+        username,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUnfollow = async (pk: string) => {
     if (!confirm("Are you sure you want to unfollow this user?")) return;
@@ -57,6 +97,23 @@ export default function ResultsPage({
           Users you follow but who don't follow you back
         </p>
 
+        {notification && (
+          <div
+            style={{
+              padding: "15px 20px",
+              borderRadius: "8px",
+              marginBottom: "20px",
+              textAlign: "center",
+              backgroundColor: notification.isFollowing ? "#d4edda" : "#f8d7da",
+              borderLeft: `4px solid ${notification.isFollowing ? "#28a745" : "#dc3545"}`,
+              color: notification.isFollowing ? "#155724" : "#721c24",
+              fontWeight: "500",
+            }}
+          >
+            <strong>@{notification.username}</strong>: {notification.message}
+          </div>
+        )}
+
         {users.length === 0 ? (
           <p style={{ textAlign: "center", color: "#8e8e8e" }}>
             Congratulations! Everyone you follow also follows you back.
@@ -66,10 +123,15 @@ export default function ResultsPage({
             {users
               .sort((a, b) => a.username.localeCompare(b.username))
               .map((user) => (
-                <div key={user.pk} className="user-card">
+                <div
+                  key={user.pk}
+                  className="user-card"
+                  onClick={() => window.open(`https://instagram.com/${user.username}`, "_blank")}
+                  style={{ cursor: "pointer" }}
+                >
                   {user.profile_pic_url && (
                     <img
-                      src={`/img?url=${encodeURIComponent(user.profile_pic_url)}`}
+                      src={`/api/img?url=${encodeURIComponent(user.profile_pic_url)}`}
                       alt={user.username}
                       style={{
                         width: "80px",
@@ -91,19 +153,38 @@ export default function ResultsPage({
                       {user.follower_count.toLocaleString()} followers
                     </div>
                   )}
-                  <button
-                    className="btn"
-                    style={{
-                      marginTop: "10px",
-                      padding: "8px 12px",
-                      fontSize: "12px",
-                      width: "100%",
-                    }}
-                    onClick={() => handleUnfollow(user.pk)}
-                    disabled={loading}
-                  >
-                    Unfollow
-                  </button>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                    <button
+                      className="btn"
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: "12px",
+                        flex: 1,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCheck(user.pk, user.username);
+                      }}
+                      disabled={loading}
+                    >
+                      Check
+                    </button>
+                    <button
+                      className="btn"
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: "12px",
+                        flex: 1,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnfollow(user.pk);
+                      }}
+                      disabled={loading}
+                    >
+                      Unfollow
+                    </button>
+                  </div>
                 </div>
               ))}
           </div>
