@@ -10,6 +10,14 @@ interface User {
   follower_count?: number;
 }
 
+interface AccountStats {
+  username: string;
+  follower_count: number;
+  following_count: number;
+  non_followers_count: number;
+  profile_pic_url?: string;
+}
+
 export default function ResultsPage({
   nonFollowers,
   sessionid,
@@ -17,6 +25,8 @@ export default function ResultsPage({
   uid,
   onBack,
   onDisconnect,
+  accountStats,
+  sessionStartTime,
 }: {
   nonFollowers: User[];
   sessionid: string;
@@ -24,14 +34,33 @@ export default function ResultsPage({
   uid: string;
   onBack: () => void;
   onDisconnect: () => void;
+  accountStats?: AccountStats;
+  sessionStartTime?: number;
 }) {
   const [users, setUsers] = useState(nonFollowers);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [notification, setNotification] = useState<{
     message: string;
     isFollowing: boolean;
     username: string;
   } | null>(null);
+
+  const filteredUsers = users.filter((user) =>
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.full_name && user.full_name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const getLastActiveTime = () => {
+    if (!sessionStartTime) return "Now";
+    const elapsed = Date.now() - sessionStartTime;
+    const minutes = Math.floor(elapsed / 60000);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) return `${hours}h ${minutes % 60}m ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return "Just now";
+  };
 
   const handleCheck = async (pk: string, username: string) => {
     setLoading(true);
@@ -108,24 +137,165 @@ export default function ResultsPage({
       style={{
         background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
         minHeight: "100vh",
-        padding: "40px 20px",
+        display: "flex",
       }}
     >
-      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        {/* Header */}
+      {/* Sidebar */}
+      <div
+        style={{
+          width: "280px",
+          background: "white",
+          padding: "30px 20px",
+          boxShadow: "2px 0 10px rgba(0,0,0,0.1)",
+          maxHeight: "100vh",
+          overflowY: "auto",
+        }}
+      >
+        <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#262626", margin: "0 0 30px 0" }}>
+          Dashboard
+        </h2>
+
+        {/* Stats Cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "30px" }}>
+          <div
+            style={{
+              background: "#f5f7fa",
+              padding: "15px",
+              borderRadius: "8px",
+              textAlign: "center",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "700", color: "#0095f6" }}>
+              {accountStats?.follower_count || 0}
+            </div>
+            <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "4px" }}>
+              Followers
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#f5f7fa",
+              padding: "15px",
+              borderRadius: "8px",
+              textAlign: "center",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "700", color: "#31a24c" }}>
+              {accountStats?.following_count || 0}
+            </div>
+            <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "4px" }}>
+              Following
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#f5f7fa",
+              padding: "15px",
+              borderRadius: "8px",
+              textAlign: "center",
+              border: "1px solid #e0e0e0",
+            }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "700", color: "#ed4956" }}>
+              {accountStats?.non_followers_count || users.length}
+            </div>
+            <div style={{ fontSize: "12px", color: "#8e8e8e", marginTop: "4px" }}>
+              Non-Followers
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div style={{ marginBottom: "20px" }}>
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #e0e0e0",
+              borderRadius: "8px",
+              fontSize: "13px",
+              boxSizing: "border-box",
+              fontFamily: "inherit",
+            }}
+          />
+        </div>
+
+        {/* Last Active */}
         <div
           style={{
-            textAlign: "center",
-            marginBottom: "40px",
+            background: "#fffbea",
+            padding: "12px",
+            borderRadius: "8px",
+            borderLeft: "4px solid #f77737",
+            marginBottom: "20px",
           }}
         >
-          <h1 style={{ fontSize: "32px", marginBottom: "10px", color: "#262626" }}>
-            Non-Followers ({users.length})
-          </h1>
-          <p style={{ fontSize: "14px", color: "#8e8e8e" }}>
-            Users you follow but who don't follow you back
-          </p>
+          <div style={{ fontSize: "12px", fontWeight: "600", color: "#262626" }}>
+            Last Active
+          </div>
+          <div style={{ fontSize: "13px", color: "#666", marginTop: "4px" }}>
+            {getLastActiveTime()}
+          </div>
         </div>
+
+        {/* Disconnect Button */}
+        <button
+          onClick={onDisconnect}
+          style={{
+            width: "100%",
+            padding: "10px",
+            background: "#ed4956",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "13px",
+            fontWeight: "600",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+          }}
+          onMouseOver={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.background = "#d43a52")
+          }
+          onMouseOut={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.background = "#ed4956")
+          }
+        >
+          Disconnect
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div
+        style={{
+          flex: 1,
+          padding: "40px 20px",
+          overflowY: "auto",
+          maxHeight: "100vh",
+        }}
+      >
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+          {/* Header */}
+          <div
+            style={{
+              textAlign: "center",
+              marginBottom: "40px",
+            }}
+          >
+            <h1 style={{ fontSize: "32px", marginBottom: "10px", color: "#262626" }}>
+              Non-Followers ({filteredUsers.length})
+            </h1>
+            <p style={{ fontSize: "14px", color: "#8e8e8e" }}>
+              Users you follow but who don't follow you back
+            </p>
+          </div>
 
         {notification && (
           <div
@@ -144,7 +314,7 @@ export default function ResultsPage({
           </div>
         )}
 
-        {users.length === 0 ? (
+        {filteredUsers.length === 0 ? (
           <div
             style={{
               background: "white",
@@ -171,7 +341,7 @@ export default function ResultsPage({
               marginBottom: "40px",
             }}
           >
-            {users
+            {filteredUsers
               .sort((a, b) => a.username.localeCompare(b.username))
               .map((user) => (
                 <div
@@ -224,16 +394,16 @@ export default function ResultsPage({
                       {user.follower_count.toLocaleString()} followers
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "6px" }}>
                     <button
                       style={{
                         flex: 1,
-                        padding: "8px 12px",
+                        padding: "8px 10px",
                         background: "#0095f6",
                         color: "white",
                         border: "none",
                         borderRadius: "6px",
-                        fontSize: "12px",
+                        fontSize: "11px",
                         fontWeight: "600",
                         cursor: loading ? "not-allowed" : "pointer",
                         opacity: loading ? 0.7 : 1,
@@ -256,12 +426,12 @@ export default function ResultsPage({
                     <button
                       style={{
                         flex: 1,
-                        padding: "8px 12px",
+                        padding: "8px 10px",
                         background: "#ed4956",
                         color: "white",
                         border: "none",
                         borderRadius: "6px",
-                        fontSize: "12px",
+                        fontSize: "11px",
                         fontWeight: "600",
                         cursor: loading ? "not-allowed" : "pointer",
                         opacity: loading ? 0.7 : 1,
@@ -281,39 +451,38 @@ export default function ResultsPage({
                     >
                       Unfollow
                     </button>
+                    <button
+                      style={{
+                        flex: 1,
+                        padding: "8px 10px",
+                        background: "#262626",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(`https://instagram.com/${user.username}`, "_blank");
+                      }}
+                      onMouseOver={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = "#444";
+                      }}
+                      onMouseOut={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = "#262626";
+                      }}
+                    >
+                      Visit
+                    </button>
                   </div>
                 </div>
               ))}
           </div>
         )}
 
-        {/* Disconnect Button */}
-        <div style={{ marginTop: "40px", paddingTop: "30px", borderTop: "1px solid #e0e0e0", textAlign: "center" }}>
-          <button
-            onClick={handleDisconnect}
-            style={{
-              padding: "12px 32px",
-              background: "#ed4956",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-            }}
-            onMouseOver={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.background = "#d43a52")
-            }
-            onMouseOut={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.background = "#ed4956")
-            }
-          >
-            Disconnect
-          </button>
-          <p style={{ marginTop: "12px", fontSize: "12px", color: "#8e8e8e" }}>
-            Disconnect from your Instagram account
-          </p>
         </div>
       </div>
     </div>

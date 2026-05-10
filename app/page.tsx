@@ -201,6 +201,8 @@ export default function Home() {
           uid={uid}
           onBack={() => {}}
           onDisconnect={handleDisconnect}
+          accountStats={accountStats}
+          sessionStartTime={sessionStartTime}
         />
       )}
       {view === "error" && <ErrorPage onRetry={handleRetry} />}
