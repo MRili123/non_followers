@@ -49,7 +49,8 @@ export default function ResultsPage({
     isFollowing: boolean;
     username: string;
   } | null>(null);
-  const [customFilterOpen, setCustomFilterOpen] = useState(false);
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [customFilterModalOpen, setCustomFilterModalOpen] = useState(false);
   const [customFilterValue, setCustomFilterValue] = useState("");
 
   const nonFollowerPks = new Set(nonFollowers.map(u => u.pk));
@@ -322,98 +323,205 @@ export default function ResultsPage({
               }}
             />
 
-            {/* Preset Filters */}
-            <div style={{ display: "flex", gap: "8px" }}>
-              {[
-                { label: "1M+", value: 1000000 },
-                { label: "500K+", value: 500000 },
-                { label: "100K+", value: 100000 },
-              ].map((preset) => (
-                <button
-                  key={preset.value}
-                  onClick={() => setMinFollowersFilter(preset.value)}
-                  style={{
-                    padding: "8px 12px",
-                    background: minFollowersFilter === preset.value ? "#0095f6" : "#f0f0f0",
-                    color: minFollowersFilter === preset.value ? "white" : "#262626",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseOver={(e) => {
-                    if (minFollowersFilter !== preset.value) {
-                      (e.currentTarget as HTMLButtonElement).style.background = "#e0e0e0";
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (minFollowersFilter !== preset.value) {
-                      (e.currentTarget as HTMLButtonElement).style.background = "#f0f0f0";
-                    }
-                  }}
-                >
-                  {preset.label}
-                </button>
-              ))}
-
-              {/* Custom Filter Button */}
+            {/* Filter Dropdown Button */}
+            <div style={{ position: "relative" }}>
               <button
-                onClick={() => setCustomFilterOpen(!customFilterOpen)}
-                style={{
-                  padding: "8px 10px",
-                  background: customFilterOpen ? "#0095f6" : "#f0f0f0",
-                  color: customFilterOpen ? "white" : "#262626",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Custom Filter Input */}
-          {customFilterOpen && (
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-              <input
-                type="number"
-                placeholder="Min followers (e.g., 250000)"
-                value={customFilterValue}
-                onChange={(e) => setCustomFilterValue(e.target.value)}
-                style={{
-                  flex: 1,
-                  minWidth: "200px",
-                  padding: "10px 15px",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  fontFamily: "inherit",
-                }}
-              />
-              <button
-                onClick={() => {
-                  setMinFollowersFilter(customFilterValue ? Number(customFilterValue) : 0);
-                  setCustomFilterOpen(false);
-                }}
+                onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
                 style={{
                   padding: "10px 15px",
-                  background: "#0095f6",
-                  color: "white",
+                  background: minFollowersFilter > 0 ? "#0095f6" : "#f0f0f0",
+                  color: minFollowersFilter > 0 ? "white" : "#262626",
                   border: "none",
                   borderRadius: "6px",
                   fontSize: "13px",
                   fontWeight: "600",
                   cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                }}
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
                 }}
               >
-                Apply
+                🔍 Filter {minFollowersFilter > 0 && `(${minFollowersFilter.toLocaleString()})`}
               </button>
+
+              {/* Dropdown Menu */}
+              {filterDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    background: "white",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    border: "1px solid #e0e0e0",
+                    zIndex: 10,
+                    minWidth: "150px",
+                    marginTop: "5px",
+                  }}
+                >
+                  {[
+                    { label: "100K+", value: 100000 },
+                    { label: "500K+", value: 500000 },
+                    { label: "1M+", value: 1000000 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.value}
+                      onClick={() => {
+                        setMinFollowersFilter(preset.value);
+                        setFilterDropdownOpen(false);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 15px",
+                        background: minFollowersFilter === preset.value ? "#f0f8ff" : "transparent",
+                        color: minFollowersFilter === preset.value ? "#0095f6" : "#262626",
+                        border: "none",
+                        borderBottom: "1px solid #e0e0e0",
+                        textAlign: "left",
+                        fontSize: "13px",
+                        fontWeight: minFollowersFilter === preset.value ? "600" : "500",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseOver={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background = "#f5f5f5";
+                      }}
+                      onMouseOut={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.background =
+                          minFollowersFilter === preset.value ? "#f0f8ff" : "transparent";
+                      }}
+                    >
+                      {minFollowersFilter === preset.value && "✓ "} {preset.label}
+                    </button>
+                  ))}
+
+                  {/* Custom Filter Option */}
+                  <button
+                    onClick={() => {
+                      setCustomFilterModalOpen(true);
+                      setFilterDropdownOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "12px 15px",
+                      background: "transparent",
+                      color: "#0095f6",
+                      border: "none",
+                      borderBottom: "1px solid #e0e0e0",
+                      textAlign: "left",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "#f5f5f5";
+                    }}
+                    onMouseOut={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                    }}
+                  >
+                    + Add Custom Filter
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Custom Filter Modal */}
+          {customFilterModalOpen && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 100,
+              }}
+              onClick={() => setCustomFilterModalOpen(false)}
+            >
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: "12px",
+                  padding: "30px",
+                  maxWidth: "400px",
+                  width: "90%",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{ margin: "0 0 20px 0", fontSize: "18px", color: "#262626" }}>
+                  Add Custom Filter
+                </h3>
+                <p style={{ margin: "0 0 20px 0", fontSize: "13px", color: "#8e8e8e" }}>
+                  Enter the minimum follower count to filter users
+                </p>
+                <input
+                  type="number"
+                  placeholder="e.g., 250000"
+                  value={customFilterValue}
+                  onChange={(e) => setCustomFilterValue(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 15px",
+                    border: "1px solid #e0e0e0",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    marginBottom: "20px",
+                    fontFamily: "inherit",
+                  }}
+                  autoFocus
+                />
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={() => setCustomFilterModalOpen(false)}
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      background: "#f0f0f0",
+                      color: "#262626",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (customFilterValue) {
+                        setMinFollowersFilter(Number(customFilterValue));
+                      }
+                      setCustomFilterModalOpen(false);
+                      setCustomFilterValue("");
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      background: "#0095f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Apply Filter
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
