@@ -247,38 +247,6 @@ export default function ResultsPage({
           </button>
         </div>
 
-        {/* User Section */}
-        <div style={{ padding: "0 20px", marginBottom: "30px", borderBottom: "1px solid #e0e0e0", paddingBottom: "20px" }}>
-          <div style={{ marginBottom: "15px" }}>
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "700", color: "#262626", textTransform: "uppercase" }}>
-              User Profile
-            </h3>
-          </div>
-
-          {/* User Stats */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ background: "#f5f7fa", padding: "10px 12px", borderRadius: "6px", border: "1px solid #e0e0e0" }}>
-              <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Followers</div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#0095f6" }}>
-                {(accountStats?.follower_count || 0).toLocaleString()}
-              </div>
-            </div>
-
-            <div style={{ background: "#f5f7fa", padding: "10px 12px", borderRadius: "6px", border: "1px solid #e0e0e0" }}>
-              <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Following</div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#31a24c" }}>
-                {(accountStats?.following_count || 0).toLocaleString()}
-              </div>
-            </div>
-
-            <div style={{ background: "#f5f7fa", padding: "10px 12px", borderRadius: "6px", border: "1px solid #e0e0e0" }}>
-              <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "4px" }}>Non-Followers</div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#ed4956" }}>
-                {(accountStats?.non_followers_count || 0).toLocaleString()}
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Navigation Section */}
         <div style={{ padding: "0 20px", marginBottom: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
