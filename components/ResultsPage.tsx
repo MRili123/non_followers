@@ -16,12 +16,14 @@ export default function ResultsPage({
   csrftoken,
   uid,
   onBack,
+  onDisconnect,
 }: {
   nonFollowers: User[];
   sessionid: string;
   csrftoken: string;
   uid: string;
   onBack: () => void;
+  onDisconnect: () => void;
 }) {
   const [users, setUsers] = useState(nonFollowers);
   const [loading, setLoading] = useState(false);
@@ -87,6 +89,18 @@ export default function ResultsPage({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Are you sure you want to disconnect? You will need to log in again.")) return;
+
+    try {
+      await fetch(`/api/cleanup?uid=${uid}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("Cleanup error:", err);
+    }
+
+    onDisconnect();
   };
 
   return (
@@ -272,6 +286,35 @@ export default function ResultsPage({
               ))}
           </div>
         )}
+
+        {/* Disconnect Button */}
+        <div style={{ marginTop: "40px", paddingTop: "30px", borderTop: "1px solid #e0e0e0", textAlign: "center" }}>
+          <button
+            onClick={handleDisconnect}
+            style={{
+              padding: "12px 32px",
+              background: "#ed4956",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+            }}
+            onMouseOver={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.background = "#d43a52")
+            }
+            onMouseOut={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.background = "#ed4956")
+            }
+          >
+            Disconnect
+          </button>
+          <p style={{ marginTop: "12px", fontSize: "12px", color: "#8e8e8e" }}>
+            Disconnect from your Instagram account
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -145,6 +145,21 @@ export default function Home() {
     }
   };
 
+  const handleDisconnect = () => {
+    // Reset everything
+    setView("login");
+    setUid("");
+    setUsername("");
+    setSessionid("");
+    setCsrftoken("");
+    setNonFollowers([]);
+    setSessionStartTime(null);
+    setAccountStats(null);
+
+    // Clear localStorage
+    localStorage.removeItem("session");
+  };
+
   const handleNewSession = () => {
     // Reset everything
     setView("login");
@@ -185,6 +200,7 @@ export default function Home() {
           csrftoken={csrftoken}
           uid={uid}
           onBack={() => {}}
+          onDisconnect={handleDisconnect}
         />
       )}
       {view === "error" && <ErrorPage onRetry={handleRetry} />}
