@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { unlink } from "fs/promises";
-import { join } from "path";
+import { rm } from "fs/promises";
+import { join, resolve } from "path";
 import { existsSync } from "fs";
 
 export async function DELETE(req: NextRequest) {
@@ -11,7 +11,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing uid parameter" }, { status: 400 });
     }
 
-    const cacheDir = join(process.cwd(), ".ig_cache", uid);
+    const projectRoot = resolve(process.cwd());
+    const cacheDir = join(projectRoot, ".ig_cache", uid);
+    console.log(`Cleaning up cache for uid ${uid} at path: ${cacheDir}`);
+
     const filesToDelete = [
       "followers.json",
       "following.json",
@@ -20,21 +23,30 @@ export async function DELETE(req: NextRequest) {
       "user_stats.json",
     ];
 
+    let deletedCount = 0;
     for (const file of filesToDelete) {
       const filePath = join(cacheDir, file);
       if (existsSync(filePath)) {
-        await unlink(filePath);
+        try {
+          await rm(filePath, { force: true });
+          console.log(`Deleted: ${filePath}`);
+          deletedCount++;
+        } catch (e) {
+          console.error(`Failed to delete ${filePath}:`, e);
+        }
+      } else {
+        console.log(`File does not exist: ${filePath}`);
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `Cleaned up cache files for uid ${uid}`,
+      message: `Cleaned up ${deletedCount} cache files for uid ${uid}`,
     });
   } catch (error) {
     console.error("Cleanup error:", error);
     return NextResponse.json(
-      { error: "Failed to cleanup cache" },
+      { error: "Failed to cleanup cache", details: String(error) },
       { status: 500 }
     );
   }

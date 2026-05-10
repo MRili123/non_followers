@@ -123,12 +123,17 @@ export default function ResultsPage({
   const handleDisconnect = async () => {
     if (!confirm("Are you sure you want to disconnect? You will need to log in again.")) return;
 
+    setLoading(true);
     try {
-      await fetch(`/api/cleanup?uid=${uid}`, { method: "DELETE" });
+      const response = await fetch(`/api/cleanup?uid=${uid}`, { method: "DELETE" });
+      if (!response.ok) {
+        console.error("Cleanup failed:", response.status);
+      }
     } catch (err) {
       console.error("Cleanup error:", err);
     }
 
+    // Clear state and redirect
     onDisconnect();
   };
 
