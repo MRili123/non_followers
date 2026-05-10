@@ -45,6 +45,46 @@ export async function POST(req: NextRequest) {
           const cookies = { sessionid, csrftoken };
 
           sendMessage("[STEP_START]Initializing");
+
+          // Fetch current user info for dashboard
+          let userStats = {
+            username: "",
+            follower_count: 0,
+            following_count: 0,
+            profile_pic_url: "",
+            full_name: "",
+          };
+
+          try {
+            const userResponse = await fetch(
+              `https://i.instagram.com/api/v1/users/${uid}/info/`,
+              {
+                headers: {
+                  "User-Agent": "Instagram 261.0.0.13.109 Android (25/7.1.2; 320dpi; 900x1600; samsung; SM-G977N; beyond1q; qcom; en_US; 444110489)",
+                  "X-IG-App-ID": "936619743392459",
+                  "Accept": "*/*",
+                  "Accept-Language": "en-US,en;q=0.5",
+                  "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
+                },
+              }
+            );
+
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              const user = userData.user;
+              userStats = {
+                username: user.username || "",
+                follower_count: user.follower_count || 0,
+                following_count: user.following_count || 0,
+                profile_pic_url: user.profile_pic_url || "",
+                full_name: user.full_name || "",
+              };
+              await saveJson("user_stats", userStats, userDir);
+            }
+          } catch (err) {
+            console.error("Failed to fetch user info:", err);
+          }
+
           sendMessage("[STEP_COMPLETE]Initializing");
 
           // Fetch followers

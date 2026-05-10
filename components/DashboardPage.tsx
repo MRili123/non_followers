@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 interface AccountStats {
   username: string;
   follower_count: number;
@@ -18,7 +16,6 @@ export default function DashboardPage({
   stats: AccountStats;
   onNewSession: () => void;
 }) {
-  const [showCopied, setShowCopied] = useState(false);
 
   const engagementRate = stats.follower_count > 0
     ? ((stats.follower_count / (stats.follower_count + stats.following_count)) *

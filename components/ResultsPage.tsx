@@ -90,12 +90,28 @@ export default function ResultsPage({
   };
 
   return (
-    <div className="results-view">
-      <div className="results-box">
-        <h2>Non-Followers ({users.length})</h2>
-        <p style={{ textAlign: "center", color: "#8e8e8e" }}>
-          Users you follow but who don't follow you back
-        </p>
+    <div
+      style={{
+        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+        minHeight: "100vh",
+        padding: "40px 20px",
+      }}
+    >
+      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+        {/* Header */}
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "40px",
+          }}
+        >
+          <h1 style={{ fontSize: "32px", marginBottom: "10px", color: "#262626" }}>
+            Non-Followers ({users.length})
+          </h1>
+          <p style={{ fontSize: "14px", color: "#8e8e8e" }}>
+            Users you follow but who don't follow you back
+          </p>
+        </div>
 
         {notification && (
           <div
@@ -115,19 +131,57 @@ export default function ResultsPage({
         )}
 
         {users.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#8e8e8e" }}>
-            Congratulations! Everyone you follow also follows you back.
-          </p>
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "60px 40px",
+              textAlign: "center",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "20px" }}>🎉</div>
+            <p style={{ fontSize: "18px", color: "#262626", fontWeight: "600", marginBottom: "10px" }}>
+              Congratulations!
+            </p>
+            <p style={{ fontSize: "14px", color: "#8e8e8e" }}>
+              Everyone you follow also follows you back. Your engagement is perfect!
+            </p>
+          </div>
         ) : (
-          <div className="user-list">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: "20px",
+              marginBottom: "40px",
+            }}
+          >
             {users
               .sort((a, b) => a.username.localeCompare(b.username))
               .map((user) => (
                 <div
                   key={user.pk}
-                  className="user-card"
+                  style={{
+                    background: "white",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    textAlign: "center",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                  }}
                   onClick={() => window.open(`https://instagram.com/${user.username}`, "_blank")}
-                  style={{ cursor: "pointer" }}
+                  onMouseOver={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.boxShadow = "0 8px 20px rgba(0,0,0,0.12)";
+                    el.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseOut={(e) => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+                    el.style.transform = "translateY(0)";
+                  }}
                 >
                   {user.profile_pic_url && (
                     <img
@@ -137,50 +191,79 @@ export default function ResultsPage({
                         width: "80px",
                         height: "80px",
                         borderRadius: "50%",
-                        marginBottom: "10px",
+                        marginBottom: "12px",
                         objectFit: "cover",
+                        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
                       }}
                     />
                   )}
-                  <div className="username">@{user.username}</div>
+                  <div style={{ fontSize: "16px", fontWeight: "600", color: "#262626", marginBottom: "4px" }}>
+                    @{user.username}
+                  </div>
                   {user.full_name && (
-                    <div style={{ fontSize: "12px", color: "#8e8e8e" }}>
+                    <div style={{ fontSize: "12px", color: "#8e8e8e", marginBottom: "8px" }}>
                       {user.full_name}
                     </div>
                   )}
                   {user.follower_count !== undefined && (
-                    <div className="follower-count">
+                    <div style={{ fontSize: "13px", color: "#0095f6", fontWeight: "600", marginBottom: "12px" }}>
                       {user.follower_count.toLocaleString()} followers
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                  <div style={{ display: "flex", gap: "8px" }}>
                     <button
-                      className="btn"
                       style={{
-                        padding: "8px 12px",
-                        fontSize: "12px",
                         flex: 1,
+                        padding: "8px 12px",
+                        background: "#0095f6",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        cursor: loading ? "not-allowed" : "pointer",
+                        opacity: loading ? 0.7 : 1,
+                        transition: "all 0.2s ease",
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCheck(user.pk, user.username);
                       }}
                       disabled={loading}
+                      onMouseOver={(e) => {
+                        if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#0080d0";
+                      }}
+                      onMouseOut={(e) => {
+                        if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#0095f6";
+                      }}
                     >
                       Check
                     </button>
                     <button
-                      className="btn"
                       style={{
-                        padding: "8px 12px",
-                        fontSize: "12px",
                         flex: 1,
+                        padding: "8px 12px",
+                        background: "#ed4956",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        cursor: loading ? "not-allowed" : "pointer",
+                        opacity: loading ? 0.7 : 1,
+                        transition: "all 0.2s ease",
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleUnfollow(user.pk);
                       }}
                       disabled={loading}
+                      onMouseOver={(e) => {
+                        if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#d43a52";
+                      }}
+                      onMouseOut={(e) => {
+                        if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#ed4956";
+                      }}
                     >
                       Unfollow
                     </button>
@@ -189,12 +272,6 @@ export default function ResultsPage({
               ))}
           </div>
         )}
-
-        <div className="action-buttons">
-          <button onClick={onBack} className="btn btn-secondary">
-            Logout
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -15,13 +15,15 @@ export default function FetchPage({
   sessionid,
   csrftoken,
   onComplete,
+  onError,
   onLogout,
 }: {
   uid: string;
   username: string;
   sessionid: string;
   csrftoken: string;
-  onComplete: (users: any[]) => void;
+  onComplete: (users: any[], stats?: any) => void;
+  onError: () => void;
   onLogout: () => void;
 }) {
   const [steps, setSteps] = useState<Step[]>([
@@ -72,6 +74,7 @@ export default function FetchPage({
                 const data = JSON.parse(line.slice(6));
                 if (data.error) {
                   setError(data.error);
+                  onError();
                 } else if (data.msg) {
                   handleMessage(data.msg);
                 } else if (data.done) {
@@ -84,7 +87,9 @@ export default function FetchPage({
           }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        const errorMsg = err instanceof Error ? err.message : "Unknown error";
+        setError(errorMsg);
+        onError();
       }
     };
 
@@ -166,15 +171,15 @@ export default function FetchPage({
     };
 
     const handleDone = async () => {
-      // Load results from API
+      // Load results and stats from API
       try {
-        const response = await fetch(`/api/results?uid=${uid}`);
-        if (response.ok) {
-          const users = await response.json();
-          onComplete(users);
-        } else {
-          onComplete([]);
-        }
+        const usersResponse = await fetch(`/api/results?uid=${uid}`);
+        const users = usersResponse.ok ? await usersResponse.json() : [];
+
+        const statsResponse = await fetch(`/api/stats?uid=${uid}`);
+        const stats = statsResponse.ok ? await statsResponse.json() : null;
+
+        onComplete(users, stats);
       } catch (err) {
         console.error("Failed to load results:", err);
         onComplete([]);
@@ -185,31 +190,81 @@ export default function FetchPage({
   }, [uid, sessionid, csrftoken, onComplete]);
 
   return (
-    <div className="fetch-view">
-      <div className="progress-box">
-        <h2>Fetching Non-Followers for @{username}</h2>
+    <div
+      style={{
+        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: "16px",
+          padding: "40px",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+          maxWidth: "600px",
+          width: "100%",
+        }}
+      >
+        <h2 style={{ fontSize: "24px", marginBottom: "10px", color: "#262626", textAlign: "center" }}>
+          Fetching Non-Followers for @{username}
+        </h2>
+        <p style={{ textAlign: "center", color: "#8e8e8e", marginBottom: "40px", fontSize: "14px" }}>
+          This may take a few moments...
+        </p>
 
-        <div className="steps-container">
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {steps.map((step) => (
-            <div key={step.id} className={`step ${step.status}`}>
-              <div className="step-icon">{step.status === "active" ? "..." : ""}</div>
-              <div className="step-text">
-                <h3>{step.name}</h3>
-                {step.messages.length > 0 && (
-                  <p>{step.messages[step.messages.length - 1]}</p>
-                )}
+            <div
+              key={step.id}
+              style={{
+                padding: "16px",
+                borderRadius: "12px",
+                background: step.status === "done" ? "#d4edda" : step.status === "active" ? "#fff3cd" : "#f5f7fa",
+                borderLeft: `4px solid ${step.status === "done" ? "#28a745" : step.status === "active" ? "#ffc107" : "#e0e0e0"}`,
+                transition: "all 0.3s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ fontSize: "18px", minWidth: "24px" }}>
+                  {step.status === "done" && "✓"}
+                  {step.status === "active" && "⏳"}
+                  {step.status === "pending" && "○"}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "600", color: "#262626" }}>
+                    {step.name}
+                  </h3>
+                  {step.messages.length > 0 && (
+                    <p style={{ margin: "0", fontSize: "13px", color: "#666" }}>
+                      {step.messages[step.messages.length - 1]}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {error && <div className="error">{error}</div>}
-
-        <div style={{ marginTop: "20px", textAlign: "center" }}>
-          <button onClick={onLogout} className="btn btn-secondary">
-            Cancel
-          </button>
-        </div>
+        {error && (
+          <div
+            style={{
+              marginTop: "30px",
+              padding: "15px",
+              background: "#f8d7da",
+              color: "#721c24",
+              borderRadius: "8px",
+              borderLeft: "4px solid #dc3545",
+              fontSize: "14px",
+            }}
+          >
+            Error: {error}
+          </div>
+        )}
       </div>
     </div>
   );
