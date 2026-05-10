@@ -18,10 +18,33 @@ export default function Home() {
   const [nonFollowers, setNonFollowers] = useState<any[]>([]);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [accountStats, setAccountStats] = useState<any>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    const savedSession = localStorage.getItem("session");
+    if (savedSession) {
+      try {
+        const session = JSON.parse(savedSession);
+        setUid(session.uid);
+        setUsername(session.username);
+        setSessionid(session.sessionid);
+        setCsrftoken(session.csrftoken);
+        setNonFollowers(session.nonFollowers || []);
+        setSessionStartTime(session.sessionStartTime);
+        setAccountStats(session.accountStats);
+        setView(session.view);
+      } catch (e) {
+        console.error("Failed to restore session:", e);
+        localStorage.removeItem("session");
+      }
+    }
+    setIsHydrated(true);
+  }, []);
 
   // Session timeout effect
   useEffect(() => {
-    if (!sessionStartTime) return;
+    if (!sessionStartTime || !isHydrated) return;
 
     const checkTimeout = setInterval(() => {
       const elapsed = Date.now() - sessionStartTime;
@@ -32,7 +55,7 @@ export default function Home() {
     }, 60000); // Check every minute
 
     return () => clearInterval(checkTimeout);
-  }, [sessionStartTime]);
+  }, [sessionStartTime, isHydrated]);
 
   const handleSessionExpired = async () => {
     // Cleanup cache
@@ -41,6 +64,9 @@ export default function Home() {
     } catch (err) {
       console.error("Cleanup error:", err);
     }
+
+    // Clear localStorage
+    localStorage.removeItem("session");
 
     // Show dashboard
     if (accountStats) {
@@ -51,26 +77,72 @@ export default function Home() {
   };
 
   const handleLogin = (uid: string, username: string, sid: string, csrf: string) => {
+    const startTime = Date.now();
     setUid(uid);
     setUsername(username);
     setSessionid(sid);
     setCsrftoken(csrf);
-    setSessionStartTime(Date.now());
+    setSessionStartTime(startTime);
     setView("fetch");
+
+    // Save to localStorage
+    localStorage.setItem("session", JSON.stringify({
+      uid,
+      username,
+      sessionid: sid,
+      csrftoken: csrf,
+      sessionStartTime: startTime,
+      view: "fetch",
+      nonFollowers: [],
+      accountStats: null,
+    }));
   };
 
   const handleFetchComplete = (users: any[], stats?: any) => {
     setNonFollowers(users);
-    if (stats) setAccountStats({ ...stats, non_followers_count: users.length });
+    const updatedStats = stats ? { ...stats, non_followers_count: users.length } : accountStats;
+    if (stats) setAccountStats(updatedStats);
     setView("results");
+
+    // Update localStorage
+    const currentSession = localStorage.getItem("session");
+    if (currentSession) {
+      const session = JSON.parse(currentSession);
+      localStorage.setItem("session", JSON.stringify({
+        ...session,
+        nonFollowers: users,
+        accountStats: updatedStats,
+        view: "results",
+      }));
+    }
   };
 
   const handleFetchError = () => {
     setView("error");
+
+    // Update localStorage
+    const currentSession = localStorage.getItem("session");
+    if (currentSession) {
+      const session = JSON.parse(currentSession);
+      localStorage.setItem("session", JSON.stringify({
+        ...session,
+        view: "error",
+      }));
+    }
   };
 
   const handleRetry = () => {
     setView("fetch");
+
+    // Update localStorage
+    const currentSession = localStorage.getItem("session");
+    if (currentSession) {
+      const session = JSON.parse(currentSession);
+      localStorage.setItem("session", JSON.stringify({
+        ...session,
+        view: "fetch",
+      }));
+    }
   };
 
   const handleNewSession = () => {
@@ -83,7 +155,14 @@ export default function Home() {
     setNonFollowers([]);
     setSessionStartTime(null);
     setAccountStats(null);
+
+    // Clear localStorage
+    localStorage.removeItem("session");
   };
+
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <>
