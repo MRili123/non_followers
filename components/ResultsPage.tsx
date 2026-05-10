@@ -42,12 +42,15 @@ export default function ResultsPage({
   const [activeTab, setActiveTab] = useState<"followers" | "following" | "non-followers">("followers");
   const [searchQuery, setSearchQuery] = useState("");
   const [minFollowersFilter, setMinFollowersFilter] = useState(0);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
     isFollowing: boolean;
     username: string;
   } | null>(null);
+  const [customFilterOpen, setCustomFilterOpen] = useState(false);
+  const [customFilterValue, setCustomFilterValue] = useState("");
 
   const nonFollowerPks = new Set(nonFollowers.map(u => u.pk));
 
@@ -76,6 +79,20 @@ export default function ResultsPage({
     })
     .sort((a, b) => a.username.localeCompare(b.username));
 
+  const toggleUserSelection = (pk: string) => {
+    if (selectedUsers.size >= 20 && !selectedUsers.has(pk)) {
+      alert("⚠️ Maximum 20 users can be selected for bulk unfollow");
+      return;
+    }
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(pk)) {
+      newSelected.delete(pk);
+    } else {
+      newSelected.add(pk);
+    }
+    setSelectedUsers(newSelected);
+  };
+
   const handleUnfollow = async (pk: string) => {
     if (!confirm("Are you sure you want to unfollow this user?")) return;
 
@@ -88,12 +105,12 @@ export default function ResultsPage({
       });
 
       if (response.ok) {
-        // Remove from current list
-        const list = getCurrentList();
-        const updatedList = list.filter((u) => u.pk !== pk);
-        if (activeTab === "following") {
-          // Would need state management for this
-        }
+        setNotification({
+          message: "Unfollowed successfully",
+          isFollowing: false,
+          username: filteredUsers.find(u => u.pk === pk)?.username || "User",
+        });
+        setTimeout(() => setNotification(null), 3000);
       } else {
         alert("Failed to unfollow user");
       }
@@ -102,6 +119,54 @@ export default function ResultsPage({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBulkUnfollow = async () => {
+    if (selectedUsers.size === 0) {
+      alert("Please select users to unfollow");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to unfollow ${selectedUsers.size} user${selectedUsers.size > 1 ? 's' : ''}?\n\nThis will be done slowly to avoid detection.`)) {
+      return;
+    }
+
+    setLoading(true);
+    const usersToUnfollow = Array.from(selectedUsers);
+    let unfollowedCount = 0;
+
+    for (let i = 0; i < usersToUnfollow.length; i++) {
+      const pk = usersToUnfollow[i];
+      try {
+        const user = filteredUsers.find(u => u.pk === pk);
+        const response = await fetch("/api/unfollow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pk, sessionid, csrftoken, uid }),
+        });
+
+        if (response.ok) {
+          unfollowedCount++;
+          setNotification({
+            message: `${unfollowedCount}/${usersToUnfollow.length} unfollowed`,
+            isFollowing: false,
+            username: user?.username || `User ${i + 1}`,
+          });
+        }
+
+        // Humanize: random delay between requests (2-5 seconds)
+        if (i < usersToUnfollow.length - 1) {
+          const delay = Math.random() * 3000 + 2000; // 2-5 seconds
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      } catch (err) {
+        console.error(`Failed to unfollow user ${pk}:`, err);
+      }
+    }
+
+    setLoading(false);
+    setSelectedUsers(new Set());
+    alert(`✓ Unfollowed ${unfollowedCount} user${unfollowedCount > 1 ? 's' : ''}`);
   };
 
   const handleDisconnectClick = async () => {
@@ -239,7 +304,7 @@ export default function ResultsPage({
           </div>
 
           {/* Filters and Search */}
-          <div style={{ display: "flex", gap: "15px", marginBottom: "30px", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "10px", marginBottom: "20px", alignItems: "center", flexWrap: "wrap" }}>
             <input
               type="text"
               placeholder="Search users..."
@@ -256,22 +321,134 @@ export default function ResultsPage({
                 fontFamily: "inherit",
               }}
             />
-            <input
-              type="number"
-              placeholder="Min followers"
-              value={minFollowersFilter}
-              onChange={(e) => setMinFollowersFilter(Number(e.target.value))}
-              style={{
-                width: "150px",
-                padding: "10px 15px",
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                fontFamily: "inherit",
-              }}
-            />
+
+            {/* Preset Filters */}
+            <div style={{ display: "flex", gap: "8px" }}>
+              {[
+                { label: "1M+", value: 1000000 },
+                { label: "500K+", value: 500000 },
+                { label: "100K+", value: 100000 },
+              ].map((preset) => (
+                <button
+                  key={preset.value}
+                  onClick={() => setMinFollowersFilter(preset.value)}
+                  style={{
+                    padding: "8px 12px",
+                    background: minFollowersFilter === preset.value ? "#0095f6" : "#f0f0f0",
+                    color: minFollowersFilter === preset.value ? "white" : "#262626",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    if (minFollowersFilter !== preset.value) {
+                      (e.currentTarget as HTMLButtonElement).style.background = "#e0e0e0";
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (minFollowersFilter !== preset.value) {
+                      (e.currentTarget as HTMLButtonElement).style.background = "#f0f0f0";
+                    }
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+
+              {/* Custom Filter Button */}
+              <button
+                onClick={() => setCustomFilterOpen(!customFilterOpen)}
+                style={{
+                  padding: "8px 10px",
+                  background: customFilterOpen ? "#0095f6" : "#f0f0f0",
+                  color: customFilterOpen ? "white" : "#262626",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                +
+              </button>
+            </div>
           </div>
+
+          {/* Custom Filter Input */}
+          {customFilterOpen && (
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+              <input
+                type="number"
+                placeholder="Min followers (e.g., 250000)"
+                value={customFilterValue}
+                onChange={(e) => setCustomFilterValue(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: "200px",
+                  padding: "10px 15px",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                }}
+              />
+              <button
+                onClick={() => {
+                  setMinFollowersFilter(customFilterValue ? Number(customFilterValue) : 0);
+                  setCustomFilterOpen(false);
+                }}
+                style={{
+                  padding: "10px 15px",
+                  background: "#0095f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          )}
+
+          {/* Selected Users Counter and Bulk Unfollow */}
+          {selectedUsers.size > 0 && (
+            <div style={{ marginBottom: "20px", display: "flex", gap: "10px", alignItems: "center" }}>
+              <div style={{ fontSize: "14px", fontWeight: "600", color: "#262626" }}>
+                {selectedUsers.size}/20 selected
+              </div>
+              <button
+                onClick={handleBulkUnfollow}
+                disabled={loading}
+                style={{
+                  padding: "10px 20px",
+                  background: "#ed4956",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.7 : 1,
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#d43a52";
+                }}
+                onMouseOut={(e) => {
+                  if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#ed4956";
+                }}
+              >
+                Unfollow All Selected
+              </button>
+            </div>
+          )}
 
           {/* Notification */}
           {notification && (
@@ -309,7 +486,12 @@ export default function ResultsPage({
                     transition: "all 0.3s ease",
                     cursor: "pointer",
                     position: "relative",
-                    border: isNonFollower(user.pk) ? "2px solid #ed4956" : "none",
+                    border: selectedUsers.has(user.pk)
+                      ? "2px solid #0095f6"
+                      : isNonFollower(user.pk)
+                      ? "2px solid #ed4956"
+                      : "none",
+                    background: selectedUsers.has(user.pk) ? "#f0f8ff" : "white",
                   }}
                   onMouseOver={(e) => {
                     const el = e.currentTarget as HTMLDivElement;
@@ -322,6 +504,24 @@ export default function ResultsPage({
                     el.style.transform = "translateY(0)";
                   }}
                 >
+                  {/* Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selectedUsers.has(user.pk)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleUserSelection(user.pk);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      left: "10px",
+                      width: "18px",
+                      height: "18px",
+                      cursor: "pointer",
+                    }}
+                  />
+
                   {activeTab === "following" && isNonFollower(user.pk) && (
                     <div
                       style={{
