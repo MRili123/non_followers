@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
 
           const cookies = { sessionid, csrftoken };
 
-          sendMessage("[INIT]Starting fetch process...");
+          sendMessage("[STEP_START]Initializing");
+          sendMessage("[STEP_COMPLETE]Initializing");
 
           // Fetch followers
           sendMessage("[STEP_START]Fetching followers");
@@ -83,7 +84,9 @@ export async function POST(req: NextRequest) {
                   headers: {
                     "User-Agent": "Instagram 261.0.0.13.109 Android (25/7.1.2; 320dpi; 900x1600; samsung; SM-G977N; beyond1q; qcom; en_US; 444110489)",
                     "X-IG-App-ID": "936619743392459",
-                    Cookie: `sessionid=${sessionid}; csrftoken=${csrftoken}`,
+                    "Accept": "*/*",
+                    "Accept-Language": "en-US,en;q=0.5",
+                    "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
                   },
                 }
               );

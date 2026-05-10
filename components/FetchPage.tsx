@@ -34,8 +34,12 @@ export default function FetchPage({
   ]);
 
   const [error, setError] = useState("");
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
+    if (started) return; // Prevent duplicate fetches
+    setStarted(true);
+
     const startFetch = async () => {
       try {
         const response = await fetch("/api/fetch", {
@@ -87,58 +91,77 @@ export default function FetchPage({
     const handleMessage = (msg: string) => {
       console.log(msg);
 
+      let currentStepId = "";
+
       // Parse step markers
       if (msg.includes("[STEP_START]")) {
         const stepName = msg.replace("[STEP_START]", "").trim();
         updateStepStatus(stepName, "active");
+        currentStepId = getStepIdFromName(stepName);
       } else if (msg.includes("[STEP_COMPLETE]")) {
-        const stepName = msg.replace("[STEP_COMPLETE]", "").trim();
-        const parts = stepName.split(":");
-        updateStepStatus(parts[0].trim(), "done");
+        const stepName = msg.replace("[STEP_COMPLETE]", "").trim().split(":")[0].trim();
+        updateStepStatus(stepName, "done");
+        currentStepId = getStepIdFromName(stepName);
+      } else {
+        // For regular messages, find the current active step
+        setSteps((prev) => {
+          const active = prev.find(s => s.status === "active");
+          return prev.map((step) =>
+            step.id === active?.id ? { ...step, messages: [...step.messages, msg] } : step
+          );
+        });
+        return;
       }
 
-      // Add message to all steps
-      setSteps((prev) =>
-        prev.map((step) => ({
-          ...step,
-          messages:
-            step.status === "active" || step.status === "done"
-              ? [...step.messages, msg]
-              : step.messages,
-        }))
-      );
+      // Add marker message to the step
+      if (currentStepId) {
+        setSteps((prev) =>
+          prev.map((step) =>
+            step.id === currentStepId ? { ...step, messages: [...step.messages, msg] } : step
+          )
+        );
+      }
+    };
+
+    const getStepIdFromName = (name: string): string => {
+      const lower = name.toLowerCase();
+      if (lower.includes("initializ")) return "init";
+      if (lower.includes("follower count")) return "counts";
+      if (lower.includes("generating") || lower.includes("computing")) return "compute";
+      if (lower.includes("followers")) return "followers";
+      if (lower.includes("following")) return "following";
+      if (lower.includes("result")) return "save";
+      return "";
     };
 
     const updateStepStatus = (name: string, status: "active" | "done") => {
-      const stepMap: { [key: string]: string } = {
-        followers: "followers",
-        following: "following",
-        "non-followers": "compute",
-        "follower counts": "counts",
-        results: "save",
-      };
+      const lower = name.toLowerCase();
+      let stepId = "";
 
-      for (const [key, stepId] of Object.entries(stepMap)) {
-        if (name.toLowerCase().includes(key)) {
-          setSteps((prev) =>
-            prev.map((step) =>
-              step.id === stepId
-                ? {
-                    ...step,
-                    status,
-                    messages: step.messages,
-                  }
-                : step.id === "init" || prev[prev.indexOf(step) - 1].status === "done"
-                ? step
-                : {
-                    ...step,
-                    status: status === "done" ? "done" : "pending",
-                    messages: step.messages,
-                  }
-            )
-          );
-          break;
-        }
+      // Match in specific order to avoid overlaps
+      if (lower.includes("initializ")) {
+        stepId = "init";
+      } else if (lower.includes("follower count")) {
+        stepId = "counts";
+      } else if (lower.includes("generating") || lower.includes("computing")) {
+        stepId = "compute";
+      } else if (lower.includes("followers")) {
+        stepId = "followers";
+      } else if (lower.includes("following")) {
+        stepId = "following";
+      } else if (lower.includes("result")) {
+        stepId = "save";
+      }
+
+      if (stepId) {
+        setSteps((prev) => {
+          const newSteps = [...prev];
+          const stepIndex = newSteps.findIndex(s => s.id === stepId);
+          if (stepIndex >= 0) {
+            newSteps[stepIndex] = { ...newSteps[stepIndex], status };
+          }
+          return newSteps;
+        });
       }
     };
 
