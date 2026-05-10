@@ -507,6 +507,9 @@ export default function ResultsPage({
             </div>
           )}
 
+          {/* Only show filters and users if not on home */}
+          {activeTab !== "home" && (
+            <>
           {/* Filters and Search */}
           <div style={{ display: "flex", gap: "10px", marginBottom: "20px", alignItems: "center", flexWrap: "wrap" }}>
             <input
@@ -761,10 +764,7 @@ export default function ResultsPage({
             </div>
           )}
 
-          {/* Only show filters and users if not on home */}
-          {activeTab !== "home" && (
-            <>
-              {/* Notification */}
+          {/* Notification */}
           {notification && (
             <div
               style={{
