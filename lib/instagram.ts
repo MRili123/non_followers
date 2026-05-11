@@ -138,8 +138,18 @@ export async function gentleFetch(
   const items: InstagramUser[] = [];
   const seenIds = new Set<string>();
   let maxId = "";
+  let iterations = 0;
+  const MAX_ITERATIONS = 100;
+  const TIMEOUT_MS = 5 * 60 * 1000; // 5 minute timeout
+  const startTime = Date.now();
 
-  while (true) {
+  while (iterations < MAX_ITERATIONS) {
+    if (Date.now() - startTime > TIMEOUT_MS) {
+      console.warn(`[gentleFetch] ${listName}: Timeout after ${iterations} iterations, stopping`);
+      break;
+    }
+
+    iterations++;
     const params: any = { count: 50 };
     if (maxId) params.max_id = maxId;
 
@@ -150,7 +160,10 @@ export async function gentleFetch(
     );
 
     const users = data.users || [];
-    console.log(`[gentleFetch] ${listName}: got ${users.length} users, next_max_id=${data.next_max_id}`);
+    console.log(`[gentleFetch] ${listName}: iteration ${iterations}, got ${users.length} users, next_max_id=${data.next_max_id}`);
+
+    if (!users.length) break;
+
     const newUsers = users.filter((u: InstagramUser) => !seenIds.has(u.pk));
 
     items.push(...newUsers);
@@ -164,6 +177,7 @@ export async function gentleFetch(
     if (!maxId) break;
   }
 
+  console.log(`[gentleFetch] ${listName}: completed with ${items.length} total items in ${iterations} iterations`);
   return items;
 }
 
