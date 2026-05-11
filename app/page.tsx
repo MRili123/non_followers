@@ -38,6 +38,25 @@ export default function Home() {
         setSessionStartTime(session.sessionStartTime);
         setAccountStats(session.accountStats);
         setView(session.view);
+
+        // Load cached stats if not in session
+        if (!session.accountStats && session.uid) {
+          fetch(`/api/stats?uid=${session.uid}`)
+            .then(r => r.json())
+            .then(stats => {
+              if (stats && stats.username) {
+                const updated = { ...stats, non_followers_count: session.nonFollowers?.length || 0 };
+                setAccountStats(updated);
+                // Update localStorage
+                const currentSession = localStorage.getItem("session");
+                if (currentSession) {
+                  const parsed = JSON.parse(currentSession);
+                  localStorage.setItem("session", JSON.stringify({ ...parsed, accountStats: updated }));
+                }
+              }
+            })
+            .catch(err => console.log("Could not load cached stats:", err));
+        }
       } catch (e) {
         console.error("Failed to restore session:", e);
         localStorage.removeItem("session");
