@@ -171,8 +171,9 @@ export async function gentleFetch(
 
     onProgress?.(items.length, 0);
 
-    // Shorter delay (500ms) to avoid Vercel timeout while still respecting rate limits
-    await new Promise(r => setTimeout(r, 500));
+    // Longer delay (3s) to avoid Instagram rate limiting on Vercel
+    // Vercel's IP addresses are more likely to be rate-limited by Instagram
+    await new Promise(r => setTimeout(r, 3000));
 
     maxId = data.next_max_id;
     if (!maxId) break;
