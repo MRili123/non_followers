@@ -34,16 +34,25 @@ export default function AdminPage() {
     }
 
     try {
+      console.log(`Deleting session for uid: ${uid}`);
       const response = await fetch(`/api/admin/sessions/${uid}`, {
         method: "DELETE",
       });
+
+      const data = await response.json();
+      console.log("Delete response:", { status: response.status, data });
+
       if (response.ok) {
         setSessions(sessions.filter((s) => s.uid !== uid));
+        setError(""); // Clear any previous errors
+        alert("Session deleted successfully");
       } else {
-        setError("Failed to delete session");
+        setError(`Failed to delete session: ${data.error || "Unknown error"}`);
       }
     } catch (err) {
-      setError("Failed to delete session");
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      console.error("Delete error:", err);
+      setError(`Failed to delete session: ${errorMsg}`);
     }
   };
 
