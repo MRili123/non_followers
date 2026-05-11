@@ -171,7 +171,8 @@ export async function gentleFetch(
 
     onProgress?.(items.length, 0);
 
-    await new Promise(r => setTimeout(r, 3000));
+    // Shorter delay (500ms) to avoid Vercel timeout while still respecting rate limits
+    await new Promise(r => setTimeout(r, 500));
 
     maxId = data.next_max_id;
     if (!maxId) break;
