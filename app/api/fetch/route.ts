@@ -18,6 +18,30 @@ async function saveJson(name: string, data: any, userDir: string) {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
 }
 
+async function checkCacheValid(userDir: string, maxAgeHours: number = 24): Promise<boolean> {
+  try {
+    const metaFile = path.join(userDir, "cache_meta.json");
+    const metaContent = await fs.readFile(metaFile, "utf8");
+    const meta = JSON.parse(metaContent);
+    const cacheAge = (Date.now() - meta.timestamp) / (1000 * 60 * 60); // hours
+    return cacheAge < maxAgeHours;
+  } catch {
+    return false;
+  }
+}
+
+async function loadCachedData(userDir: string) {
+  try {
+    const followers = JSON.parse(await fs.readFile(path.join(userDir, "followers.json"), "utf8"));
+    const following = JSON.parse(await fs.readFile(path.join(userDir, "following.json"), "utf8"));
+    const nonFollowers = JSON.parse(await fs.readFile(path.join(userDir, "non_followers.json"), "utf8"));
+    const userStats = JSON.parse(await fs.readFile(path.join(userDir, "user_stats.json"), "utf8"));
+    return { followers, following, nonFollowers, userStats };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { sessionid, csrftoken, uid } = await req.json();
@@ -31,6 +55,44 @@ export async function POST(req: NextRequest) {
 
     const userDir = path.join(CACHE_DIR, uid);
     await ensureDir(userDir);
+
+    // Check if cache is fresh (less than 24 hours old)
+    const cacheIsValid = await checkCacheValid(userDir, 24);
+
+    if (cacheIsValid) {
+      const cachedData = await loadCachedData(userDir);
+      if (cachedData) {
+        // Return cached data via SSE
+        const readable = new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              new TextEncoder().encode(`data: ${JSON.stringify({ msg: "[CACHED] Loading from cache..." })}\n\n`)
+            );
+            controller.enqueue(
+              new TextEncoder().encode(`data: ${JSON.stringify({
+                followers: cachedData.followers,
+                following: cachedData.following,
+                nonFollowers: cachedData.nonFollowers,
+                stats: cachedData.userStats,
+                cached: true
+              })}\n\n`)
+            );
+            controller.enqueue(
+              new TextEncoder().encode(`data: ${JSON.stringify({ done: true })}\n\n`)
+            );
+            controller.close();
+          }
+        });
+
+        return new NextResponse(readable, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
+        });
+      }
+    }
 
     // Create a ReadableStream for server-sent events
     const readable = new ReadableStream({
@@ -207,6 +269,13 @@ export async function POST(req: NextRequest) {
             usernames,
             "utf8"
           );
+
+          // Save cache metadata (timestamp)
+          await saveJson("cache_meta", {
+            timestamp: Date.now(),
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          }, userDir);
+
           sendMessage("[STEP_COMPLETE]Saving results");
 
           // Summary
