@@ -6,12 +6,18 @@
   --green: #31a24c;
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
+  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
-  background: #fafafa;
-  color: #262626;
+  background: #000;
+  color: #fff;
 }
 
 h1 {

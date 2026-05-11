@@ -18,7 +18,7 @@ export default function Home() {
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
   const [nonFollowers, setNonFollowers] = useState<any[]>([]);
-  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [sessionStartTime, setSessionStartTime] = useState<number | undefined>(undefined);
   const [accountStats, setAccountStats] = useState<any>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -165,7 +165,7 @@ export default function Home() {
     setFollowers([]);
     setFollowing([]);
     setNonFollowers([]);
-    setSessionStartTime(null);
+    setSessionStartTime(undefined);
     setAccountStats(null);
 
     // Clear localStorage
@@ -182,7 +182,7 @@ export default function Home() {
     setFollowers([]);
     setFollowing([]);
     setNonFollowers([]);
-    setSessionStartTime(null);
+    setSessionStartTime(undefined);
     setAccountStats(null);
 
     // Clear localStorage
@@ -204,7 +204,6 @@ export default function Home() {
           csrftoken={csrftoken}
           onComplete={handleFetchComplete}
           onError={handleFetchError}
-          onLogout={() => {}}
         />
       )}
       {view === "results" && (
@@ -215,10 +214,8 @@ export default function Home() {
           sessionid={sessionid}
           csrftoken={csrftoken}
           uid={uid}
-          onBack={() => {}}
           onDisconnect={handleDisconnect}
           accountStats={accountStats}
-          sessionStartTime={sessionStartTime}
         />
       )}
       {view === "error" && <ErrorPage onRetry={handleRetry} />}

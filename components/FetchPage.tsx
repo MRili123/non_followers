@@ -16,15 +16,13 @@ export default function FetchPage({
   csrftoken,
   onComplete,
   onError,
-  onLogout,
 }: {
   uid: string;
   username: string;
   sessionid: string;
   csrftoken: string;
-  onComplete: (users: any[], stats?: any) => void;
+  onComplete: (users: any[], stats?: any, followersList?: any[], followingList?: any[]) => void;
   onError: () => void;
-  onLogout: () => void;
 }) {
   const [steps, setSteps] = useState<Step[]>([
     { id: "init", name: "Initializing", status: "active", messages: [] },

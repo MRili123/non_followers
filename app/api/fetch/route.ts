@@ -55,8 +55,12 @@ export async function POST(req: NextRequest) {
             full_name: "",
           };
 
+          // First try to get current user info from the API
           try {
-            const userResponse = await fetch(
+            sendMessage(`Fetching user info...`);
+
+            // Try mobile API first
+            let userResponse = await fetch(
               `https://i.instagram.com/api/v1/users/${uid}/info/`,
               {
                 headers: {
@@ -73,15 +77,54 @@ export async function POST(req: NextRequest) {
               const userData = await userResponse.json();
               const user = userData.user;
               userStats = {
-                username: user.username || "",
-                follower_count: user.follower_count || 0,
-                following_count: user.following_count || 0,
-                profile_pic_url: user.profile_pic_url || "",
-                full_name: user.full_name || "",
+                username: user?.username || "",
+                follower_count: user?.follower_count || 0,
+                following_count: user?.following_count || 0,
+                profile_pic_url: user?.profile_pic_url || "",
+                full_name: user?.full_name || "",
               };
+              sendMessage(`✓ Loaded: @${userStats.username} (${userStats.follower_count} followers, ${userStats.following_count} following)`);
               await saveJson("user_stats", userStats, userDir);
+            } else {
+              sendMessage(`⚠️ Mobile API failed (${userResponse.status}), trying web endpoint...`);
+
+              // Fallback: try to fetch current user first
+              try {
+                const currentUserRes = await fetch(
+                  `https://i.instagram.com/api/v1/accounts/current_user/`,
+                  {
+                    headers: {
+                      "User-Agent": "Instagram 261.0.0.13.109 Android (25/7.1.2; 320dpi; 900x1600; samsung; SM-G977N; beyond1q; qcom; en_US; 444110489)",
+                      "X-IG-App-ID": "936619743392459",
+                      "Accept": "*/*",
+                      "Accept-Language": "en-US,en;q=0.5",
+                      "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
+                    },
+                  }
+                );
+
+                if (currentUserRes.ok) {
+                  const currentUser = await currentUserRes.json();
+                  const user = currentUser.user;
+                  userStats = {
+                    username: user?.username || "",
+                    follower_count: user?.follower_count || 0,
+                    following_count: user?.following_count || 0,
+                    profile_pic_url: user?.profile_pic_url || "",
+                    full_name: user?.full_name || "",
+                  };
+                  sendMessage(`✓ Loaded via current_user: @${userStats.username} (${userStats.follower_count} followers, ${userStats.following_count} following)`);
+                  await saveJson("user_stats", userStats, userDir);
+                } else {
+                  sendMessage(`⚠️ Could not fetch user stats - API returned ${userResponse.status}`);
+                }
+              } catch (fallbackErr) {
+                sendMessage(`⚠️ Fallback endpoint failed`);
+                console.error("Fallback error:", fallbackErr);
+              }
             }
           } catch (err) {
+            sendMessage(`⚠️ Error fetching user info: ${err instanceof Error ? err.message : "Unknown error"}`);
             console.error("Failed to fetch user info:", err);
           }
 
