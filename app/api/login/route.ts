@@ -4,6 +4,65 @@ import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
+async function saveSessions(sessions: any[]) {
+  // Try to save to Redis if available
+  try {
+    const { Redis } = await import("@upstash/redis");
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL || "",
+      token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+    });
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      await redis.set("sessions", JSON.stringify(sessions));
+      console.log("Sessions saved to Redis");
+      return;
+    }
+  } catch (e) {
+    console.log("Redis not available, falling back to file storage");
+  }
+
+  // Fallback to file storage (local development)
+  try {
+    const sessionsFile = join(process.cwd(), "sessions.json");
+    await writeFile(sessionsFile, JSON.stringify(sessions, null, 2), "utf-8");
+    console.log("Sessions saved to file");
+  } catch (e) {
+    console.error("Failed to save sessions:", e);
+  }
+}
+
+async function getSessions() {
+  // Try to get from Redis first
+  try {
+    const { Redis } = await import("@upstash/redis");
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL || "",
+      token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+    });
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      const data = await redis.get("sessions");
+      if (data) {
+        return JSON.parse(data as string);
+      }
+    }
+  } catch (e) {
+    console.log("Redis not available");
+  }
+
+  // Fallback to file storage
+  try {
+    const sessionsFile = join(process.cwd(), "sessions.json");
+    if (existsSync(sessionsFile)) {
+      const content = await readFile(sessionsFile, "utf-8");
+      return JSON.parse(content);
+    }
+  } catch (e) {
+    console.error("Failed to read sessions:", e);
+  }
+
+  return [];
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { sessionid, csrftoken } = await req.json();
@@ -20,22 +79,13 @@ export async function POST(req: NextRequest) {
 
     console.log("Login successful:", user.username);
 
-    // Save session to sessions.json
+    // Save session
     try {
-      const sessionsFile = join(process.cwd(), "sessions.json");
-      let sessions = [];
-
-      if (existsSync(sessionsFile)) {
-        const content = await readFile(sessionsFile, "utf-8");
-        sessions = JSON.parse(content);
-      }
-
-      // Check if session already exists for this uid
+      const sessions = await getSessions();
       const existingIndex = sessions.findIndex((s: any) => s.uid === user.pk);
       const now = new Date().toISOString();
 
       if (existingIndex >= 0) {
-        // Update existing session
         sessions[existingIndex] = {
           uid: user.pk,
           username: user.username,
@@ -45,7 +95,6 @@ export async function POST(req: NextRequest) {
           last_used: now,
         };
       } else {
-        // Add new session
         sessions.push({
           uid: user.pk,
           username: user.username,
@@ -56,11 +105,9 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      await writeFile(sessionsFile, JSON.stringify(sessions, null, 2), "utf-8");
-      console.log("Session saved successfully");
+      await saveSessions(sessions);
     } catch (saveErr) {
       console.error("Failed to save session:", saveErr);
-      // Don't fail login if session save fails
     }
 
     return NextResponse.json({
