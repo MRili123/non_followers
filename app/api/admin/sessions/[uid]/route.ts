@@ -9,7 +9,8 @@ export async function DELETE(
 ) {
   try {
     const { uid } = await params;
-    const sessionsFile = join(process.cwd(), "sessions.json");
+    // Use /tmp for Vercel, fallback to project root for local
+    const sessionsFile = process.env.VERCEL ? "/tmp/sessions.json" : join(process.cwd(), "sessions.json");
 
     if (!existsSync(sessionsFile)) {
       return NextResponse.json({ error: "Sessions file not found" }, { status: 404 });

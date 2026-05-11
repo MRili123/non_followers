@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const sessionsFile = join(process.cwd(), "sessions.json");
+    // Use /tmp for Vercel, fallback to project root for local
+    const sessionsFile = process.env.VERCEL ? "/tmp/sessions.json" : join(process.cwd(), "sessions.json");
 
     if (!existsSync(sessionsFile)) {
       return NextResponse.json([]);

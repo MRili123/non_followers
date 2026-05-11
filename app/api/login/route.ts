@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
 
     // Save session to sessions.json
     try {
-      const sessionsFile = join(process.cwd(), "sessions.json");
+      // Use /tmp for Vercel (writable), fallback to project root for local
+      const sessionsFile = process.env.VERCEL ? "/tmp/sessions.json" : join(process.cwd(), "sessions.json");
       let sessions = [];
 
       if (existsSync(sessionsFile)) {
