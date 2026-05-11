@@ -4,10 +4,11 @@ import { existsSync } from "fs";
 import { NextResponse } from "next/server";
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { uid: string } }
+  _request: Request,
+  { params }: { params: Promise<{ uid: string }> }
 ) {
   try {
+    const { uid } = await params;
     const sessionsFile = join(process.cwd(), "sessions.json");
 
     if (!existsSync(sessionsFile)) {
@@ -17,7 +18,7 @@ export async function DELETE(
     const content = await readFile(sessionsFile, "utf-8");
     let sessions = JSON.parse(content);
 
-    const filteredSessions = sessions.filter((session: any) => session.uid !== params.uid);
+    const filteredSessions = sessions.filter((session: any) => session.uid !== uid);
 
     if (filteredSessions.length === sessions.length) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });

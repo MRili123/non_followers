@@ -853,7 +853,7 @@ export default function ResultsPage({
                           <div
                             key={story.id}
                             onClick={() => setSelectedStory(story)}
-                            style={{ borderRadius: "12px", overflow: "hidden", border: "2px solid #e0e0e0", width: "160px", flexShrink: 0, cursor: "pointer", transition: "transform 0.2s", _hover: { transform: "scale(1.05)" } }}
+                            style={{ borderRadius: "12px", overflow: "hidden", border: "2px solid #e0e0e0", width: "160px", flexShrink: 0, cursor: "pointer", transition: "transform 0.2s" }}
                             onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
                             onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
                           >

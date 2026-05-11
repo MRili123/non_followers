@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
