@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchCurrentUser } from "@/lib/instagram";
-import { readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { Redis } from "@upstash/redis";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,45 +23,38 @@ export async function POST(req: NextRequest) {
 
     console.log("Login successful:", user.username);
 
-    // Save session to sessions.json
+    // Save session to Redis
     try {
-      // Use /tmp for Vercel (writable), fallback to project root for local
-      const sessionsFile = process.env.VERCEL ? "/tmp/sessions.json" : join(process.cwd(), "sessions.json");
-      let sessions = [];
+      if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+        const sessions = await redis.get("sessions");
+        let sessionsList = sessions ? JSON.parse(sessions as string) : [];
 
-      if (existsSync(sessionsFile)) {
-        const content = await readFile(sessionsFile, "utf-8");
-        sessions = JSON.parse(content);
+        const existingIndex = sessionsList.findIndex((s: any) => s.uid === user.pk);
+        const now = new Date().toISOString();
+
+        if (existingIndex >= 0) {
+          sessionsList[existingIndex] = {
+            uid: user.pk,
+            username: user.username,
+            sessionid,
+            csrftoken,
+            added_at: sessionsList[existingIndex].added_at,
+            last_used: now,
+          };
+        } else {
+          sessionsList.push({
+            uid: user.pk,
+            username: user.username,
+            sessionid,
+            csrftoken,
+            added_at: now,
+            last_used: now,
+          });
+        }
+
+        await redis.set("sessions", JSON.stringify(sessionsList));
+        console.log("Session saved to Redis successfully");
       }
-
-      // Check if session already exists for this uid
-      const existingIndex = sessions.findIndex((s: any) => s.uid === user.pk);
-      const now = new Date().toISOString();
-
-      if (existingIndex >= 0) {
-        // Update existing session
-        sessions[existingIndex] = {
-          uid: user.pk,
-          username: user.username,
-          sessionid,
-          csrftoken,
-          added_at: sessions[existingIndex].added_at,
-          last_used: now,
-        };
-      } else {
-        // Add new session
-        sessions.push({
-          uid: user.pk,
-          username: user.username,
-          sessionid,
-          csrftoken,
-          added_at: now,
-          last_used: now,
-        });
-      }
-
-      await writeFile(sessionsFile, JSON.stringify(sessions, null, 2), "utf-8");
-      console.log("Session saved successfully");
     } catch (saveErr) {
       console.error("Failed to save session:", saveErr);
     }

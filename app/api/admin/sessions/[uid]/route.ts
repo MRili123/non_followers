@@ -1,7 +1,10 @@
-import { readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
 
 export async function DELETE(
   _request: Request,
@@ -9,25 +12,22 @@ export async function DELETE(
 ) {
   try {
     const { uid } = await params;
-    // Use /tmp for Vercel, fallback to project root for local
-    const sessionsFile = process.env.VERCEL ? "/tmp/sessions.json" : join(process.cwd(), "sessions.json");
 
-    if (!existsSync(sessionsFile)) {
-      return NextResponse.json({ error: "Sessions file not found" }, { status: 404 });
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      const sessions = await redis.get("sessions");
+      let sessionsList = sessions ? JSON.parse(sessions as string) : [];
+
+      const filteredSessions = sessionsList.filter((session: any) => session.uid !== uid);
+
+      if (filteredSessions.length === sessionsList.length) {
+        return NextResponse.json({ error: "Session not found" }, { status: 404 });
+      }
+
+      await redis.set("sessions", JSON.stringify(filteredSessions));
+      return NextResponse.json({ success: true });
     }
 
-    const content = await readFile(sessionsFile, "utf-8");
-    let sessions = JSON.parse(content);
-
-    const filteredSessions = sessions.filter((session: any) => session.uid !== uid);
-
-    if (filteredSessions.length === sessions.length) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
-    }
-
-    await writeFile(sessionsFile, JSON.stringify(filteredSessions, null, 2));
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ error: "Redis not configured" }, { status: 500 });
   } catch (error) {
     console.error("Failed to delete session:", error);
     return NextResponse.json({ error: "Failed to delete session" }, { status: 500 });
