@@ -21,6 +21,7 @@ export async function DELETE(req: NextRequest) {
       "non_followers.json",
       "non_followers.txt",
       "user_stats.json",
+      "cache_meta.json",
     ];
 
     let deletedCount = 0;
