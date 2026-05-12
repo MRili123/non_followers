@@ -73,7 +73,7 @@ async function getPage(
   url: string,
   params: Record<string, any>,
   session: AxiosInstance,
-  retries = 10
+  retries = 5
 ): Promise<any> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -85,21 +85,21 @@ async function getPage(
       const text = err.response?.data ? JSON.stringify(err.response.data) : err.message;
 
       if (status === 400 && text.includes("feedback_required")) {
-        const wait = 30;
+        const wait = Math.min(15 * Math.pow(2, attempt), 60);
         console.log(`[RATE_LIMIT] Waiting ${wait}s before retry (attempt ${attempt + 1}/${retries})`);
         await new Promise(r => setTimeout(r, wait * 1000));
         continue;
       }
 
       if (status === 429) {
-        const wait = Math.min(60 * (attempt + 1), 300);
+        const wait = Math.min(20 * Math.pow(2, attempt), 120);
         console.log(`Rate limited (429) – waiting ${wait}s before retry`);
         await new Promise(r => setTimeout(r, wait * 1000));
         continue;
       }
 
       if (status >= 500) {
-        const wait = Math.min(10 * Math.pow(2, attempt), 120);
+        const wait = Math.min(10 * Math.pow(2, attempt), 60);
         console.log(`Server error (${status}) – waiting ${wait}s before retry (attempt ${attempt + 1}/${retries})`);
         await new Promise(r => setTimeout(r, wait * 1000));
         continue;
@@ -111,7 +111,7 @@ async function getPage(
 
       console.error(`HTTP ${status}:`, text.slice(0, 200));
       if (attempt === retries - 1) throw err;
-      const wait = Math.min(2 * (attempt + 1), 10);
+      const wait = Math.min(5 * Math.pow(2, attempt), 30);
       await new Promise(r => setTimeout(r, wait * 1000));
     }
   }
@@ -148,7 +148,7 @@ export async function gentleFetch(
   let maxId = "";
   let iterations = 0;
   const MAX_ITERATIONS = 100;
-  const TIMEOUT_MS = 5 * 60 * 1000; // 5 minute timeout
+  const TIMEOUT_MS = 4 * 60 * 1000; // 4 minute timeout (Vercel default is 300s)
   const startTime = Date.now();
 
   while (iterations < MAX_ITERATIONS) {
@@ -179,8 +179,9 @@ export async function gentleFetch(
 
     onProgress?.(items.length, 0);
 
-    // Longer delay for "following" - Instagram rate-limits this endpoint more aggressively
-    const delay = listName === "following" ? 7000 : 5000;
+    // Adaptive delay: increase if we've done many iterations (approaching rate limit)
+    const baseDelay = listName === "following" ? 4000 : 3000;
+    const delay = baseDelay + (iterations * 500); // Add 500ms per iteration
     await new Promise(r => setTimeout(r, delay));
 
     maxId = data.next_max_id;
