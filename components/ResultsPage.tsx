@@ -261,6 +261,19 @@ export default function ResultsPage({
     }
   };
 
+  const handleForceRefresh = async () => {
+    if (!confirm("This will clear the cache and fetch fresh data from Instagram. Continue?")) return;
+
+    setLoading(true);
+    try {
+      await fetch(`/api/cleanup?uid=${uid}`, { method: "DELETE" });
+      window.location.reload();
+    } catch (err) {
+      console.error("Refresh error:", err);
+      setLoading(false);
+    }
+  };
+
   const handleDisconnectClick = async () => {
     if (!confirm("Are you sure you want to disconnect? You will need to log in again.")) return;
 
@@ -382,10 +395,36 @@ export default function ResultsPage({
           ))}
         </div>
 
-        {/* Disconnect Button */}
-        <div style={{ padding: "20px 20px", borderTop: "1px solid #e0e0e0" }}>
+        {/* Buttons */}
+        <div style={{ padding: "20px 20px", borderTop: "1px solid #e0e0e0", display: "flex", gap: "10px", flexDirection: "column" }}>
+          <button
+            onClick={handleForceRefresh}
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "#0095f6",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: loading ? "not-allowed" : "pointer",
+              transition: "all 0.3s ease",
+              opacity: loading ? 0.6 : 1,
+            }}
+            onMouseOver={(e) =>
+              !loading && ((e.currentTarget as HTMLButtonElement).style.background = "#0082d4")
+            }
+            onMouseOut={(e) =>
+              !loading && ((e.currentTarget as HTMLButtonElement).style.background = "#0095f6")
+            }
+          >
+            🔄 Force Refresh
+          </button>
           <button
             onClick={handleDisconnectClick}
+            disabled={loading}
             style={{
               width: "100%",
               padding: "12px",
@@ -395,14 +434,15 @@ export default function ResultsPage({
               borderRadius: "8px",
               fontSize: "13px",
               fontWeight: "600",
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
               transition: "all 0.3s ease",
+              opacity: loading ? 0.6 : 1,
             }}
             onMouseOver={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.background = "#d43a52")
+              !loading && ((e.currentTarget as HTMLButtonElement).style.background = "#d43a52")
             }
             onMouseOut={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.background = "#ed4956")
+              !loading && ((e.currentTarget as HTMLButtonElement).style.background = "#ed4956")
             }
           >
             🔌 Disconnect
