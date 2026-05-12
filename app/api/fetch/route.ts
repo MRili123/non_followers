@@ -5,6 +5,50 @@ import path from "path";
 
 const CACHE_DIR = ".ig_cache";
 
+const IG_HEADERS = {
+  "User-Agent": "Instagram 261.0.0.13.109 Android (25/7.1.2; 320dpi; 900x1600; samsung; SM-G977N; beyond1q; qcom; en_US; 444110489)",
+  "X-IG-App-ID": "936619743392459",
+  "Accept": "*/*",
+  "Accept-Language": "en-US,en;q=0.5",
+};
+
+async function fetchWithRetry(
+  url: string,
+  headers: Record<string, string>,
+  retries = 5,
+  delayMs = 2000
+): Promise<any> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(url, { headers });
+
+      if (response.status === 429 || (response.status === 400 && response.statusText.includes("Too Busy"))) {
+        if (attempt < retries - 1) {
+          const waitTime = Math.min(delayMs * Math.pow(2, attempt), 60000);
+          console.log(`[RATE_LIMIT] Attempt ${attempt + 1}/${retries}: waiting ${waitTime}ms`);
+          await new Promise(r => setTimeout(r, waitTime));
+          continue;
+        }
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`[FETCH_ERROR] ${response.status}: ${text.slice(0, 200)}`);
+        if (attempt === retries - 1) {
+          throw new Error(`Instagram API returned ${response.status}`);
+        }
+        await new Promise(r => setTimeout(r, delayMs));
+        continue;
+      }
+
+      return response.json();
+    } catch (err) {
+      if (attempt === retries - 1) throw err;
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+}
+
 async function ensureDir(dir: string) {
   try {
     await fs.mkdir(dir, { recursive: true });
@@ -122,51 +166,40 @@ export async function POST(req: NextRequest) {
             sendMessage(`Fetching user info...`);
 
             // Try mobile API first
-            let userResponse = await fetch(
-              `https://i.instagram.com/api/v1/users/${uid}/info/`,
-              {
-                headers: {
-                  "User-Agent": "Instagram 261.0.0.13.109 Android (25/7.1.2; 320dpi; 900x1600; samsung; SM-G977N; beyond1q; qcom; en_US; 444110489)",
-                  "X-IG-App-ID": "936619743392459",
-                  "Accept": "*/*",
-                  "Accept-Language": "en-US,en;q=0.5",
+            try {
+              const userData = await fetchWithRetry(
+                `https://i.instagram.com/api/v1/users/${uid}/info/`,
+                {
+                  ...IG_HEADERS,
                   "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
-                },
+                }
+              );
+
+              if (userData?.user) {
+                const user = userData.user;
+                userStats = {
+                  username: user?.username || "",
+                  follower_count: user?.follower_count || 0,
+                  following_count: user?.following_count || 0,
+                  profile_pic_url: user?.profile_pic_url || "",
+                  full_name: user?.full_name || "",
+                };
+                sendMessage(`✓ Loaded: @${userStats.username} (${userStats.follower_count} followers, ${userStats.following_count} following)`);
+                await saveJson("user_stats", userStats, userDir);
               }
-            );
+            } catch (userInfoError) {
+              sendMessage(`⚠️ Mobile API failed, trying current_user endpoint...`);
 
-            if (userResponse.ok) {
-              const userData = await userResponse.json();
-              const user = userData.user;
-              userStats = {
-                username: user?.username || "",
-                follower_count: user?.follower_count || 0,
-                following_count: user?.following_count || 0,
-                profile_pic_url: user?.profile_pic_url || "",
-                full_name: user?.full_name || "",
-              };
-              sendMessage(`✓ Loaded: @${userStats.username} (${userStats.follower_count} followers, ${userStats.following_count} following)`);
-              await saveJson("user_stats", userStats, userDir);
-            } else {
-              sendMessage(`⚠️ Mobile API failed (${userResponse.status}), trying web endpoint...`);
-
-              // Fallback: try to fetch current user first
               try {
-                const currentUserRes = await fetch(
+                const currentUser = await fetchWithRetry(
                   `https://i.instagram.com/api/v1/accounts/current_user/`,
                   {
-                    headers: {
-                      "User-Agent": "Instagram 261.0.0.13.109 Android (25/7.1.2; 320dpi; 900x1600; samsung; SM-G977N; beyond1q; qcom; en_US; 444110489)",
-                      "X-IG-App-ID": "936619743392459",
-                      "Accept": "*/*",
-                      "Accept-Language": "en-US,en;q=0.5",
-                      "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
-                    },
+                    ...IG_HEADERS,
+                    "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
                   }
                 );
 
-                if (currentUserRes.ok) {
-                  const currentUser = await currentUserRes.json();
+                if (currentUser) {
                   const user = currentUser.user;
                   userStats = {
                     username: user?.username || "",
@@ -178,7 +211,7 @@ export async function POST(req: NextRequest) {
                   sendMessage(`✓ Loaded via current_user: @${userStats.username} (${userStats.follower_count} followers, ${userStats.following_count} following)`);
                   await saveJson("user_stats", userStats, userDir);
                 } else {
-                  sendMessage(`⚠️ Could not fetch user stats - API returned ${userResponse.status}`);
+                  sendMessage(`⚠️ Could not fetch user stats`);
                 }
               } catch (fallbackErr) {
                 sendMessage(`⚠️ Fallback endpoint failed`);
@@ -227,22 +260,18 @@ export async function POST(req: NextRequest) {
             const percent = Math.round(((i + 1) / nonFollowers.length) * 100);
 
             try {
-              const response = await fetch(
+              const data = await fetchWithRetry(
                 `https://i.instagram.com/api/v1/users/${u.pk}/info/`,
                 {
-                  headers: {
-                    "User-Agent": "Instagram 261.0.0.13.109 Android (25/7.1.2; 320dpi; 900x1600; samsung; SM-G977N; beyond1q; qcom; en_US; 444110489)",
-                    "X-IG-App-ID": "936619743392459",
-                    "Accept": "*/*",
-                    "Accept-Language": "en-US,en;q=0.5",
-                    "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
-                  },
-                }
+                  ...IG_HEADERS,
+                  "Cookie": `sessionid=${sessionid}; csrftoken=${csrftoken}`,
+                },
+                3,
+                1000
               );
 
-              if (response.ok) {
-                const data = await response.json();
-                u.follower_count = data.user?.follower_count || 0;
+              if (data?.user) {
+                u.follower_count = data.user.follower_count || 0;
               }
             } catch (err) {
               console.error(`Failed to fetch info for ${u.username}:`, err);
@@ -250,8 +279,8 @@ export async function POST(req: NextRequest) {
 
             sendMessage(`[${percent}%] ${u.username}: ${u.follower_count || "?"} followers`);
 
-            // Rate limit
-            await new Promise(r => setTimeout(r, 1000));
+            // Rate limit - increase to 2s on Vercel
+            await new Promise(r => setTimeout(r, 2000));
           }
           sendMessage("[STEP_COMPLETE]Fetching follower counts");
 

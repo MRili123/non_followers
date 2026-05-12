@@ -32,7 +32,7 @@ function createSession(cookies: SessionCookies): AxiosInstance {
 
   const session = axios.create({
     headers: HEADERS,
-    timeout: 30000,
+    timeout: 60000,
   });
 
   // Intercept requests to add cookies
@@ -171,9 +171,9 @@ export async function gentleFetch(
 
     onProgress?.(items.length, 0);
 
-    // Longer delay (3s) to avoid Instagram rate limiting on Vercel
+    // Longer delay (5s) to avoid Instagram rate limiting on Vercel
     // Vercel's IP addresses are more likely to be rate-limited by Instagram
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 5000));
 
     maxId = data.next_max_id;
     if (!maxId) break;
