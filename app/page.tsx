@@ -7,7 +7,7 @@ import ResultsPage from "@/components/ResultsPage";
 import ErrorPage from "@/components/ErrorPage";
 import DashboardPage from "@/components/DashboardPage";
 
-const SESSION_TIMEOUT = 1 * 60 * 60 * 1000; // 1 hour
+const SESSION_TIMEOUT = 5 * 60 * 60 * 1000; // 5 hours
 
 export default function Home() {
   const [view, setView] = useState<"login" | "fetch" | "results" | "error" | "dashboard">("login");
