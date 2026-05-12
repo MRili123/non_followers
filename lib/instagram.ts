@@ -98,13 +98,21 @@ async function getPage(
         continue;
       }
 
+      if (status >= 500) {
+        const wait = Math.min(10 * Math.pow(2, attempt), 120);
+        console.log(`Server error (${status}) – waiting ${wait}s before retry (attempt ${attempt + 1}/${retries})`);
+        await new Promise(r => setTimeout(r, wait * 1000));
+        continue;
+      }
+
       if (status === 200) {
         return err.response.data;
       }
 
       console.error(`HTTP ${status}:`, text.slice(0, 200));
       if (attempt === retries - 1) throw err;
-      await new Promise(r => setTimeout(r, 1000));
+      const wait = Math.min(2 * (attempt + 1), 10);
+      await new Promise(r => setTimeout(r, wait * 1000));
     }
   }
   throw new Error("Too many rate-limit hits");
@@ -171,9 +179,9 @@ export async function gentleFetch(
 
     onProgress?.(items.length, 0);
 
-    // Longer delay (5s) to avoid Instagram rate limiting on Vercel
-    // Vercel's IP addresses are more likely to be rate-limited by Instagram
-    await new Promise(r => setTimeout(r, 5000));
+    // Longer delay for "following" - Instagram rate-limits this endpoint more aggressively
+    const delay = listName === "following" ? 7000 : 5000;
+    await new Promise(r => setTimeout(r, delay));
 
     maxId = data.next_max_id;
     if (!maxId) break;
